@@ -31,16 +31,16 @@ def env(name: str, default: str) -> str:
 
 
 DB_CONFIG = {
-    "host": env("DB_HOST", "127.0.0.1"),
-    "port": int(env("DB_PORT", "3306")),
-    "user": env("DB_USER", "root"),
-    "password": env("DB_PASSWORD", ""),
-    "database": env("DB_NAME", "geospatial_routing_system"),
+    "host": env("DB_HOST", env("MYSQLHOST", "127.0.0.1")),
+    "port": int(env("DB_PORT", env("MYSQLPORT", "3306"))),
+    "user": env("DB_USER", env("MYSQLUSER", "root")),
+    "password": env("DB_PASSWORD", env("MYSQLPASSWORD", "")),
+    "database": env("DB_NAME", env("MYSQLDATABASE", "geospatial_routing_system")),
 }
 
 REDIS_CONFIG = {
-    "host": env("REDIS_HOST", "127.0.0.1"),
-    "port": int(env("REDIS_PORT", "6379")),
+    "host": env("REDIS_HOST", env("REDISHOST", "127.0.0.1")),
+    "port": int(env("REDIS_PORT", env("REDISPORT", "6379"))),
     "db": int(env("REDIS_DB", "0")),
     "decode_responses": True,
 }
