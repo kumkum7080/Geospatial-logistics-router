@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Tracking - BangaloreBites</title>
+  <link rel="stylesheet" href="/static/consumer/style.css?v=15">
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="header-container">
+      <a href="/bangalore" class="logo" id="track-logo"><span>Bangalore</span>Bites</a>
+      <div class="nav-actions">
+        <div class="user-badge" id="user-display"></div>
+        <a href="/bangalore" class="btn btn-secondary" id="new-order-btn" style="padding: 8px 16px; font-size: 14px;">Place New Order</a>
+        <button id="logout-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">Logout</button>
+        <!-- Hamburger Menu Button -->
+        <button class="hamburger-btn" id="drawer-toggle-btn">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Side Drawer Backdrop Overlay -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+
+  <!-- Side Drawer Panel -->
+  <div class="side-drawer" id="side-drawer">
+    <button class="drawer-close-btn" id="drawer-close-btn">×</button>
+    <div class="drawer-header">
+      <div class="drawer-user-name" id="drawer-user-name">User Name</div>
+      <div class="drawer-user-tier" id="drawer-user-tier" style="border: 1px solid var(--text-muted); color: var(--text-secondary); padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-block;">Standard</div>
+    </div>
+    <nav class="drawer-menu">
+      <a href="/bangalore" class="drawer-item" id="drawer-link-home">🍽️ Browse Kitchens</a>
+      <a href="/checkout" class="drawer-item">🛒 View Basket / Cart</a>
+      <a href="#" class="drawer-item logout" id="drawer-logout-btn">🚪 Logout</a>
+    </nav>
+  </div>
+
+  <main>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1 style="font-size: 32px; font-family: 'Outfit', sans-serif;">Live Dispatch Tracking</h1>
+        <p style="color: var(--text-secondary); font-size: 14px;">Order ID: <strong id="order-id-display" style="color: #FFFFFF;">SUB-XXXX</strong></p>
+      </div>
+      <div id="simulation-panel" class="glass" style="padding: 12px 20px; border-radius: var(--border-radius-md); border-color: var(--accent-glow);">
+        <button id="sim-btn" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;">
+          ⚡ Simulate Rider GPS Stream
+        </button>
+      </div>
+    </div>
+
+    <div class="order-tracking-layout">
+      <!-- Left: Tracking Map & Address Details -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- Tracking Map -->
+        <section class="glass" style="position: relative; border-radius: var(--border-radius-md); overflow: hidden;">
+          <div id="tracking-map" style="height: 400px;"></div>
+          <div id="telemetry-status" style="position: absolute; bottom: 16px; left: 16px; z-index: 1000; background: rgba(15,15,18,0.85); padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; display: flex; align-items: center; gap: 8px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #F59E0B;" id="telemetry-dot"></div>
+            <span id="telemetry-text">Waiting for rider telemetry feed...</span>
+          </div>
+        </section>
+
+        <!-- Address Details Card (Matches Checkout Page Design) -->
+        <section class="glass" style="padding: 24px; border-radius: var(--border-radius-md);">
+          <h2 style="font-size: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            📍 Delivery Coordinates & Address
+          </h2>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Latitude</label>
+              <input type="text" id="lat-display" class="form-input" style="color: var(--text-secondary);" readonly>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Longitude</label>
+              <input type="text" id="lng-display" class="form-input" style="color: var(--text-secondary);" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="house-display">House / Flat Number & Building</label>
+            <input type="text" id="house-display" class="form-input" style="color: var(--text-secondary);" readonly>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="street-display">Street / Landmark</label>
+            <input type="text" id="street-display" class="form-input" style="color: var(--text-secondary);" readonly>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right: Timeline and Agent info -->
+      <aside class="glass" style="padding: 24px; border-radius: var(--border-radius-md); display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <h3 style="font-size: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px;">
+            Order Status
+          </h3>
+
+          <div class="status-timeline">
+            <div class="timeline-step" id="step-placed">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <h4>Order Placed</h4>
+                <p>Sent to kitchen. Locks and surge resolved.</p>
+              </div>
+            </div>
+            <div class="timeline-step" id="step-preparing">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <h4>Food Preparing</h4>
+                <p>Kitchen staff is assembling your fresh order.</p>
+              </div>
+            </div>
+            <div class="timeline-step" id="step-assigned">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <h4>Driver Assigned</h4>
+                <p>Delivery rider is en route to pick up your order.</p>
+              </div>
+            </div>
+            <div class="timeline-step" id="step-delivered">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <h4>Arrived</h4>
+                <p>Driver has reached your location. Enjoy your meal!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 24px;">
+          <h4 style="font-size: 14px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; font-weight: 700;">Delivery details</h4>
+          
+          <!-- ETA Timer Card -->
+          <div class="glass" style="padding: 12px 16px; border-radius: var(--border-radius-sm); border-color: var(--accent-glow); margin-bottom: 16px; display: flex; align-items: center; gap: 12px; background: rgba(226, 55, 68, 0.05);">
+            <span style="font-size: 24px;">⏱️</span>
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Estimated Arrival Time</div>
+              <div style="font-size: 16px; font-weight: 700; color: #FFFFFF;" id="eta-display">Calculating...</div>
+            </div>
+          </div>
+
+          <!-- Driver Details -->
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-secondary); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+              🛵
+            </div>
+            <div>
+              <p style="font-size: 14px; font-weight: 600;" id="driver-name-display">Matching Agent...</p>
+              <p style="font-size: 12px; color: var(--text-secondary);" id="driver-id-display">Agent ID: --</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--text-secondary); border-top: 1px dashed var(--border-color); padding-top: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span>Fulfillment Source:</span>
+              <span id="src-name-display" style="color:#FFF; font-weight:500;">Kitchen Hub</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span>Delivery Address:</span>
+              <span id="delivery-address-display" style="color:#FFF; font-weight:500; font-size: 13px; line-height: 1.4;">Fetching address...</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    // 1. Session Auth Guard
+    const sessionStr = localStorage.getItem('customer_session');
+    if (!sessionStr) {
+      window.location.href = '/login';
+    }
+    const session = JSON.parse(sessionStr);
+    document.getElementById('user-display').innerHTML = `Welcome, <strong>${session.full_name}</strong>`;
+
+    // Dynamic logo and order routes
+    const isBangalore = window.location.pathname.startsWith('/bangalore') || true;
+    const cityPrefix = isBangalore ? '/bangalore' : '/delhi';
+    document.getElementById('track-logo').href = cityPrefix;
+    document.getElementById('new-order-btn').href = cityPrefix;
+    document.getElementById('drawer-link-home').href = cityPrefix;
+
+    // --- ☰ SIDE DRAWER CONTROLS ---
+    const overlay = document.getElementById('drawer-overlay');
+    const drawer = document.getElementById('side-drawer');
+    const toggleBtn = document.getElementById('drawer-toggle-btn');
+    const closeBtn = document.getElementById('drawer-close-btn');
+
+    function openDrawer() {
+      overlay.classList.add('open');
+      drawer.classList.add('open');
+      
+      document.getElementById('drawer-user-name').textContent = session.full_name;
+      const tierBadge = document.getElementById('drawer-user-tier');
+      tierBadge.textContent = session.tier.replace('_', ' ');
+      const tColors = { 'Premium_VIP': '#F59E0B', 'Business': '#10B981', 'Standard': '#A0A5B5' };
+      tierBadge.style.color = tColors[session.tier] || '#FFF';
+      tierBadge.style.borderColor = tColors[session.tier] || '#FFF';
+    }
+
+    function closeDrawer() {
+      overlay.classList.remove('open');
+      drawer.classList.remove('open');
+    }
+
+    toggleBtn.addEventListener('click', openDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+
+    document.getElementById('drawer-logout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    // 2. Parse Order ID from path /order-status/{order_id}
+    const pathParts = window.location.pathname.split('/');
+    const orderId = pathParts[pathParts.length - 1];
+    document.getElementById('order-id-display').textContent = orderId;
+
+    // 3. State variables
+    let orderDetails = null;
+    let map = null;
+    let custMarker = null;
+    let srcMarker = null;
+    let driverMarker = null;
+    let wsCustomer = null;
+    let simulationActive = false;
+
+    // Custom Icon Creators
+    function createMapPin(colorClass, emoji) {
+      return L.divIcon({
+        className: 'custom-div-icon',
+        html: `
+          <div class="marker-pulse"></div>
+          <div class="marker-pin ${colorClass}">
+            <span style="transform: rotate(45deg); display: block; font-size: 14px; margin-top: -2px;">${emoji}</span>
+          </div>
+        `,
+        iconSize: [30, 42],
+        iconAnchor: [15, 42]
+      });
+    }
+
+    // 4. Fetch Order Details from DB
+    async function loadOrder() {
+      try {
+        const response = await fetch(`/api/order/details/${orderId}`);
+        if (!response.ok) throw new Error('Order not found');
+        orderDetails = await response.json();
+
+        // Update UI Text
+        document.getElementById('src-name-display').textContent = orderDetails.src_name;
+        document.getElementById('delivery-address-display').textContent = orderDetails.delivery_address;
+        
+        // Populate coordinates and address inputs
+        const addressParts = orderDetails.delivery_address.split(', ');
+        const house = addressParts[0] || '';
+        const street = addressParts.slice(1).join(', ') || '';
+
+        document.getElementById('lat-display').value = orderDetails.cust_lat.toFixed(6);
+        document.getElementById('lng-display').value = orderDetails.cust_lng.toFixed(6);
+        document.getElementById('house-display').value = house;
+        document.getElementById('street-display').value = street;
+        
+        let driverName = "Driver Delta (Smart Match)";
+        let driverId = orderDetails.agent_id;
+        
+        if (driverId === 'DRIVER-FALLBACK-99') {
+          driverName = "Rider Delta (Search Fallback)";
+        } else {
+          driverName = `Partner ${driverId.replace('DRIVER-', 'Rider #')}`;
+        }
+        
+        document.getElementById('driver-name-display').textContent = driverName;
+        document.getElementById('driver-id-display').textContent = `Agent ID: ${driverId}`;
+
+        // Update timeline status steps
+        updateTimeline(orderDetails.status);
+
+        // Initialize Map
+        initMap(orderDetails.cust_lat, orderDetails.cust_lng, orderDetails.src_lat, orderDetails.src_lng);
+
+        // Connect WebSocket tracking client
+        connectCustomerSocket(driverId);
+
+        // Start dynamic ETA countdown
+        startETACountdown(orderDetails.created_at, orderDetails.scheduled_sla_minutes);
+
+      } catch (err) {
+        console.error(err);
+        alert('Could not find active order record in the dispatch database.');
+      }
+    }
+
+    function startETACountdown(createdAtStr, slaMinutes) {
+      const createdAt = new Date(createdAtStr);
+      const slaMs = slaMinutes * 60 * 1000;
+      const targetTime = new Date(createdAt.getTime() + slaMs);
+
+      function updateTimer() {
+        const now = new Date();
+        const diffMs = targetTime.getTime() - now.getTime();
+        
+        if (orderDetails.status === 'DELIVERED') {
+          document.getElementById('eta-display').innerHTML = '<span style="color:#24963F;">Arrived!</span>';
+          return;
+        }
+
+        if (diffMs <= 0) {
+          document.getElementById('eta-display').textContent = 'Arriving any moment...';
+          return;
+        }
+
+        const remainingMins = Math.floor(diffMs / (60 * 1000));
+        const remainingSecs = Math.floor((diffMs % (60 * 1000)) / 1000);
+        
+        document.getElementById('eta-display').textContent = `${remainingMins}m ${remainingSecs}s remaining`;
+      }
+
+      updateTimer();
+      const intervalId = setInterval(() => {
+        if (orderDetails.status === 'DELIVERED') {
+          clearInterval(intervalId);
+        }
+        updateTimer();
+      }, 1000);
+    }
+
+    function updateTimeline(status) {
+      if (orderDetails) {
+        orderDetails.status = status;
+      }
+      
+      // Clear active classes
+      const steps = ['step-placed', 'step-preparing', 'step-assigned', 'step-delivered'];
+      steps.forEach(s => document.getElementById(s).classList.remove('active', 'completed'));
+
+      if (status === 'PLACED') {
+        document.getElementById('step-placed').classList.add('active');
+      } else if (status === 'ASSIGNED') {
+        document.getElementById('step-placed').classList.add('completed');
+        document.getElementById('step-preparing').classList.add('active');
+      } else if (status === 'PICKED_UP') {
+        document.getElementById('step-placed').classList.add('completed');
+        document.getElementById('step-preparing').classList.add('completed');
+        document.getElementById('step-assigned').classList.add('active');
+      } else if (status === 'DELIVERED') {
+        document.getElementById('step-placed').classList.add('completed');
+        document.getElementById('step-preparing').classList.add('completed');
+        document.getElementById('step-assigned').classList.add('completed');
+        document.getElementById('step-delivered').classList.add('active');
+        
+        // Disable simulation once order is delivered
+        document.getElementById('sim-btn').disabled = true;
+        document.getElementById('sim-btn').textContent = 'Order Delivered';
+      }
+    }
+
+    // Initialize Leaflet Map
+    function initMap(cLat, cLng, sLat, sLng) {
+      if (map) return;
+
+      map = L.map('tracking-map');
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+      }).addTo(map);
+
+      // Add Restaurant pin
+      srcMarker = L.marker([sLat, sLng], {
+        icon: createMapPin('restaurant', '🍳')
+      }).addTo(map).bindPopup(`<strong>Source Fulfillment:</strong><br>${orderDetails.src_name}`);
+
+      // Add Customer pin
+      custMarker = L.marker([cLat, cLng], {
+        icon: createMapPin('', '🏠')
+      }).addTo(map).bindPopup('<strong>Delivery Location</strong><br>Your residence');
+
+      // Fit bounds
+      const bounds = L.latLngBounds([[sLat, sLng], [cLat, cLng]]);
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
+    // 5. Connect WebSocket Customer Listener
+    function connectCustomerSocket(driverId) {
+      const loc = window.location;
+      let wsUri = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUri += `//${loc.host}/ws/customer/track/${driverId}`;
+
+      console.log(`Connecting to customer websocket tracking pipeline: ${wsUri}`);
+      wsCustomer = new WebSocket(wsUri);
+
+      wsCustomer.onopen = () => {
+        console.log('Customer WebSocket listener subscribed successfully.');
+        document.getElementById('telemetry-dot').style.backgroundColor = '#10B981'; // Green
+        document.getElementById('telemetry-text').textContent = 'Listening to live agent pings...';
+      };
+
+      wsCustomer.onmessage = (event) => {
+        const payload = JSON.parse(event.data);
+        console.log('WS Live Update:', payload);
+
+        if (payload.status === 'LIVE_UPDATE' && payload.telemetry) {
+          const tel = payload.telemetry;
+          updateDriverPin(tel.latitude, tel.longitude);
+        }
+      };
+
+      wsCustomer.onclose = () => {
+        console.log('Customer WebSocket listener connection closed.');
+        document.getElementById('telemetry-dot').style.backgroundColor = '#646875'; // Gray
+        document.getElementById('telemetry-text').textContent = 'Offline (WebSocket disconnected)';
+      };
+    }
+
+    // Update or create driver marker on map
+    function updateDriverPin(lat, lng) {
+      if (!map) return;
+
+      document.getElementById('telemetry-dot').style.backgroundColor = '#10B981';
+      document.getElementById('telemetry-text').textContent = `Live GPS coordinates: Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
+
+      if (driverMarker) {
+        driverMarker.setLatLng([lat, lng]);
+      } else {
+        driverMarker = L.marker([lat, lng], {
+          icon: createMapPin('driver', '🛵')
+        }).addTo(map).bindPopup('<strong>Your Delivery Agent</strong>');
+      }
+
+      // Smoothly pan map to follow driver
+      map.panTo([lat, lng]);
+    }
+
+    // 6. Interactive GPS Simulation Block
+    document.getElementById('sim-btn').addEventListener('click', () => {
+      if (simulationActive) return;
+      simulationActive = true;
+      document.getElementById('sim-btn').disabled = true;
+      document.getElementById('sim-btn').textContent = '⚡ Stream Active...';
+
+      simulateRiderMovement();
+    });
+
+    // Simulated WebSocket GPS client
+    async function simulateRiderMovement() {
+      const driverId = orderDetails.agent_id;
+      const sLat = orderDetails.src_lat;
+      const sLng = orderDetails.src_lng;
+      const cLat = orderDetails.cust_lat;
+      const cLng = orderDetails.cust_lng;
+
+      // Connect mock client ws
+      const loc = window.location;
+      let wsUri = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUri += `//${loc.host}/ws/rider/${driverId}`;
+      
+      const wsRiderMock = new WebSocket(wsUri);
+
+      wsRiderMock.onopen = async () => {
+        console.log('🔌 Mock Rider GPS Stream connection opened.');
+        
+        // Update workflow status to Preparing
+        updateTimeline('ASSIGNED');
+        await sleep(2000);
+        
+        // Update workflow status to Out for Delivery
+        updateTimeline('PICKED_UP');
+        
+        // Generate path steps (interpolation)
+        const steps = 15;
+        for (let i = 0; i <= steps; i++) {
+          if (wsRiderMock.readyState !== WebSocket.OPEN) break;
+          
+          const progress = i / steps;
+          const lat = sLat + (cLat - sLat) * progress;
+          const lng = sLng + (cLng - sLng) * progress;
+
+          // Stream to backend
+          wsRiderMock.send(JSON.stringify({
+            latitude: lat,
+            longitude: lng
+          }));
+
+          console.log(`[SIM] Sent driver coords ${i}/${steps}: ${lat}, ${lng}`);
+          await sleep(1500);
+        }
+
+        // Arrived at destination
+        updateTimeline('DELIVERED');
+        wsRiderMock.close();
+      };
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Run startup
+    loadOrder();
+  </script>
+</body>
+</html>

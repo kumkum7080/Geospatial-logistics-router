@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BangaloreBites - Hyperlocal Kitchen Selection</title>
+  <link rel="stylesheet" href="/static/consumer/style.css?v=15">
+  <style>
+    .hero-slider-container {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1;
+      overflow: hidden;
+    }
+    .hero-slide {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-size: cover;
+      background-position: center;
+      transform: translateX(0);
+      z-index: 0;
+      transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hero-slide.active {
+      z-index: 2;
+      transform: translateX(0);
+    }
+    .hero-slide.next-prep {
+      z-index: 1;
+      transform: translateX(0);
+    }
+    .hero-slide.exit {
+      transform: translateX(-100%);
+      z-index: 2;
+    }
+    .hero-overlay-mask {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 3;
+      background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(5,5,7,0.95) 100%);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header class="header-transparent">
+    <div class="header-container">
+      <a href="/bangalore" class="logo" id="header-logo" style="visibility: hidden;"><span>Bangalore</span>Bites</a>
+      <div class="nav-actions">
+        <div class="user-badge" id="user-display"></div>
+        <button id="logout-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">Logout</button>
+        <!-- Hamburger Menu Button -->
+        <button class="hamburger-btn" id="drawer-toggle-btn">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Side Drawer Backdrop Overlay -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+
+  <!-- Side Drawer Panel -->
+  <div class="side-drawer" id="side-drawer">
+    <button class="drawer-close-btn" id="drawer-close-btn">×</button>
+    <div class="drawer-header">
+      <div class="drawer-user-name" id="drawer-user-name">User Name</div>
+      <div class="drawer-user-tier" id="drawer-user-tier" style="border: 1px solid var(--text-muted); color: var(--text-secondary); padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-block;">Standard</div>
+    </div>
+    <nav class="drawer-menu">
+      <a href="/bangalore" class="drawer-item active" id="drawer-link-home">🍽️ Browse Kitchens</a>
+      <a href="/checkout" class="drawer-item">🛒 View Basket / Cart</a>
+      <a href="#" class="drawer-item logout" id="drawer-logout-btn">🚪 Logout</a>
+    </nav>
+  </div>
+
+  <!-- Zomato-Style Large Hero Banner (Edge-to-Edge with Sliding Backgrounds) -->
+  <section class="restaurant-hero" style="min-height: 480px; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 120px 24px 50px; margin-bottom: 0; border: none; border-radius: 0; position: relative; overflow: hidden; background: none !important;">
+    
+    <!-- Sliding Background Images -->
+    <div class="hero-slider-container">
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80');"></div>
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1600&auto=format&fit=crop&q=80');"></div>
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=1600&auto=format&fit=crop&q=80');"></div>
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1544025162-d76694265947?w=1600&auto=format&fit=crop&q=80');"></div>
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1600&auto=format&fit=crop&q=80');"></div>
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1600&auto=format&fit=crop&q=80');"></div>
+    </div>
+    
+    <!-- Background overlay mask -->
+    <div class="hero-overlay-mask"></div>
+
+    <!-- Big Center Logo -->
+    <div style="text-align: center; margin-bottom: 16px; position: relative; z-index: 4;">
+      <span style="font-family: 'Outfit', sans-serif; font-size: 56px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.03em; text-shadow: 0 4px 15px rgba(0,0,0,0.6);">
+        <span style="background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Bangalore</span>Bites
+      </span>
+    </div>
+
+    <h1 class="hero-title" style="text-shadow: 0 4px 20px rgba(0,0,0,0.8); text-align: center; color: #FFFFFF; font-size: 24px; font-weight: 500; margin-bottom: 24px; font-family: 'Outfit', sans-serif; text-transform: none; letter-spacing: normal; position: relative; z-index: 4;">
+      Discover the best food & drinks in Bangalore
+    </h1>
+    
+    <!-- Zomato-Style Search Bar -->
+    <div class="search-container glass" style="padding: 6px 12px; border-radius: 50px; display: flex; align-items: center; width: 100%; max-width: 650px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 12px 40px rgba(0,0,0,0.5); background: rgba(22, 23, 29, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); position: relative; z-index: 4;">
+      <span style="font-size: 20px; margin-left: 10px; margin-right: 10px;">🔍</span>
+      <input type="text" id="search-input" placeholder="Search cuisines, dishes, or kitchens..." style="background: transparent; border: none; outline: none; color: #FFFFFF; font-size: 16px; flex-grow: 1; padding: 12px 0;">
+      <button class="btn btn-primary" id="search-btn" style="border-radius: 50px; padding: 10px 28px; font-size: 14px;">Search</button>
+    </div>
+  </section>
+
+  <main style="padding-top: 40px;">
+    <!-- Kitchen Selection Grid -->
+    <section>
+      <h2 style="font-size: 28px; margin-bottom: 24px; font-family: 'Outfit', sans-serif;" id="city-title">Active Kitchens in Bangalore</h2>
+      <div id="restaurants-grid" class="grid grid-cols-3">
+        <!-- Dynamic Cards -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // 1. Session Auth Guard
+    const sessionStr = localStorage.getItem('customer_session');
+    if (!sessionStr) {
+      window.location.href = '/login';
+    }
+    const session = JSON.parse(sessionStr);
+
+    // Resolve City Name
+    const isBangalore = window.location.pathname.startsWith('/bangalore');
+    const cityPrefix = isBangalore ? '/bangalore' : '/delhi';
+    const cityName = isBangalore ? 'Bangalore' : 'Delhi';
+    
+    document.getElementById('city-title').textContent = `Active Kitchens in ${cityName}`;
+    
+    // Display User Session Details
+    const userDisplay = document.getElementById('user-display');
+    const tierColors = {
+      'Premium_VIP': '#F59E0B', // Gold
+      'Business': '#10B981',    // Green
+      'Standard': '#9FA4B2'     // Muted Gray
+    };
+    const tierBadge = `<span style="color: ${tierColors[session.tier] || '#FFF'}; font-weight: 700; border: 1px solid ${tierColors[session.tier] || '#FFF'}; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 6px;">${session.tier.replace('_', ' ')}</span>`;
+    userDisplay.innerHTML = `Welcome, <strong>${session.full_name}</strong> ${tierBadge}`;
+
+    // Logout Handler
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    // --- ☰ SIDE DRAWER CONTROLS ---
+    const overlay = document.getElementById('drawer-overlay');
+    const drawer = document.getElementById('side-drawer');
+    const toggleBtn = document.getElementById('drawer-toggle-btn');
+    const closeBtn = document.getElementById('drawer-close-btn');
+
+    function openDrawer() {
+      overlay.classList.add('open');
+      drawer.classList.add('open');
+      
+      document.getElementById('drawer-user-name').textContent = session.full_name;
+      const tierBadge = document.getElementById('drawer-user-tier');
+      tierBadge.textContent = session.tier.replace('_', ' ');
+      const tColors = { 'Premium_VIP': '#F59E0B', 'Business': '#10B981', 'Standard': '#A0A5B5' };
+      tierBadge.style.color = tColors[session.tier] || '#FFF';
+      tierBadge.style.borderColor = tColors[session.tier] || '#FFF';
+    }
+
+    function closeDrawer() {
+      overlay.classList.remove('open');
+      drawer.classList.remove('open');
+    }
+
+    toggleBtn.addEventListener('click', openDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+
+    document.getElementById('drawer-logout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    document.getElementById('header-logo').href = cityPrefix;
+    document.getElementById('drawer-link-home').href = cityPrefix;
+
+    // Curated catalog of 22 high-resolution food assets from Unsplash for fallback
+    const fallbackImages = [
+      "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop&q=60", // Biryani 1
+      "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=500&auto=format&fit=crop&q=60", // Dosa
+      "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=500&auto=format&fit=crop&q=60", // North Indian Paneer
+      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60", // Burger
+      "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60", // Pizza 1
+      "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=500&auto=format&fit=crop&q=60", // Dessert Cake
+      "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=500&auto=format&fit=crop&q=60", // Pasta
+      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&auto=format&fit=crop&q=60", // Salad
+      "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&auto=format&fit=crop&q=60", // Sushi
+      "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=500&auto=format&fit=crop&q=60", // Noodles
+      "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=500&auto=format&fit=crop&q=60", // Sandwich
+      "https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=500&auto=format&fit=crop&q=60", // Samosa
+      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&auto=format&fit=crop&q=60", // Coffee Cup
+      "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=500&auto=format&fit=crop&q=60", // Ice Cream
+      "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=500&auto=format&fit=crop&q=60", // Biryani 2
+      "https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=500&auto=format&fit=crop&q=60", // South Indian Thali
+      "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=500&auto=format&fit=crop&q=60", // Tandoori Chicken
+      "https://images.unsplash.com/photo-1547592165-e1d17f1a0655?w=500&auto=format&fit=crop&q=60", // Soup Bowl
+      "https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=500&auto=format&fit=crop&q=60", // Pancakes Stack
+      "https://images.unsplash.com/photo-1536935338788-846bb9981813?w=500&auto=format&fit=crop&q=60", // Juice Mocktails
+      "https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=500&auto=format&fit=crop&q=60", // Kebab Rolls
+      "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=500&auto=format&fit=crop&q=60"  // Pizza 2
+    ];
+
+    function getFallbackImage(id) {
+      if (!id) id = String(Math.random());
+      id = String(id);
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const index = Math.abs(hash) % fallbackImages.length;
+      return fallbackImages[index];
+    }
+
+    function getRestaurantImage(cuisines, id) {
+      if (!id) id = String(Math.random());
+      id = String(id);
+      
+      let keyword = "food,dish";
+      const lowerCuisines = String(cuisines || "").toLowerCase();
+      
+      if (lowerCuisines.includes("biryani") || lowerCuisines.includes("rice")) {
+        keyword = "biryani,rice";
+      } else if (lowerCuisines.includes("dosa") || lowerCuisines.includes("south indian") || lowerCuisines.includes("idli")) {
+        keyword = "dosa,idli";
+      } else if (lowerCuisines.includes("pizza")) {
+        keyword = "pizza";
+      } else if (lowerCuisines.includes("burger")) {
+        keyword = "burger";
+      } else if (lowerCuisines.includes("dessert") || lowerCuisines.includes("sweet") || lowerCuisines.includes("cake") || lowerCuisines.includes("ice cream")) {
+        keyword = "dessert,cake";
+      } else if (lowerCuisines.includes("coffee") || lowerCuisines.includes("tea") || lowerCuisines.includes("beverage") || lowerCuisines.includes("cafe")) {
+        keyword = "coffee,drink";
+      } else if (lowerCuisines.includes("noodle") || lowerCuisines.includes("chinese") || lowerCuisines.includes("pasta")) {
+        keyword = "noodles,pasta";
+      } else if (lowerCuisines.includes("north indian") || lowerCuisines.includes("paneer") || lowerCuisines.includes("kebab") || lowerCuisines.includes("tandoori")) {
+        keyword = "kebab,curry";
+      } else if (lowerCuisines.includes("salad") || lowerCuisines.includes("healthy")) {
+        keyword = "salad,healthy";
+      }
+
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const seed = Math.abs(hash) % 1000;
+      
+      return `https://loremflickr.com/600/450/${keyword}?lock=${seed}`;
+    }
+
+    // 2. Fetch active kitchens
+    async function loadRestaurants() {
+      const grid = document.getElementById('restaurants-grid');
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 40px;">Scanning neural networks for nearby active kitchens...</div>';
+
+      try {
+        const response = await fetch('/api/restaurants');
+        if (!response.ok) throw new Error('Failed to load restaurants');
+        const list = await response.json();
+
+        if (list.length === 0) {
+          grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 40px;">No kitchens are currently active in ${cityName}.</div>`;
+          return;
+        }
+
+        grid.innerHTML = '';
+        list.forEach(rest => {
+          const rating = rest.rating_avg ? rest.rating_avg.toFixed(1) : 'New';
+          const restImage = rest.image_url ? rest.image_url : getRestaurantImage(rest.cuisine_types, rest.merchant_id);
+          const fallbackUrl = getFallbackImage(rest.merchant_id);
+          const cardHtml = `
+            <div class="card glass" data-items="${(rest.menu_items || '').replace(/"/g, '&quot;')}">
+              <div class="card-img-container">
+                <img src="${restImage}" class="card-img" alt="${rest.name}" onerror="this.onerror=null; this.src='${fallbackUrl}';">
+                <div class="card-badge">${rest.open_closed_hours}</div>
+              </div>
+              <div class="card-body">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h3 class="card-title" style="font-size: 17px; line-height: 1.3;">${rest.name}</h3>
+                    <div class="rating-badge">${rating} ★</div>
+                  </div>
+                  <p class="card-description" style="font-size: 12px; margin-bottom: 8px;">${rest.cuisine_types}</p>
+                </div>
+                <div class="card-footer" style="padding-top: 10px;">
+                  <span style="font-size: 12px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; max-width:140px; white-space:nowrap;">ID: ${rest.merchant_id}</span>
+                  <a href="${cityPrefix}/${rest.slug}" class="btn btn-primary" style="padding: 6px 14px; font-size: 12px;">View Menu</a>
+                </div>
+              </div>
+            </div>
+          `;
+          grid.insertAdjacentHTML('beforeend', cardHtml);
+        });
+      } catch (err) {
+        console.error(err);
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #FF6B76; padding: 40px;">Error connecting to dispatch database. Check server.</div>';
+      }
+    }
+
+    loadRestaurants();
+
+    // Client-side search filtration
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      const cards = document.querySelectorAll('#restaurants-grid .card');
+      
+      cards.forEach(card => {
+        const title = card.querySelector('.card-title').textContent.toLowerCase();
+        const desc = card.querySelector('.card-description').textContent.toLowerCase();
+        const id = card.querySelector('.card-footer span').textContent.toLowerCase();
+        const items = card.getAttribute('data-items') ? card.getAttribute('data-items').toLowerCase() : '';
+        
+        if (title.includes(query) || desc.includes(query) || id.includes(query) || items.includes(query)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+
+    // --- 🖼️ BACKGROUND HERO SLIDESHOW ---
+    const heroSlides = document.querySelectorAll('.hero-slide');
+    if (heroSlides.length > 0) {
+      let currentHeroIndex = 0;
+      heroSlides[currentHeroIndex].classList.add('active');
+
+      function rotateHeroSlides() {
+        const active = heroSlides[currentHeroIndex];
+        const nextIndex = (currentHeroIndex + 1) % heroSlides.length;
+        const next = heroSlides[nextIndex];
+
+        // 1. Prepare next slide directly underneath
+        next.style.transition = 'none';
+        next.className = 'hero-slide next-prep';
+        
+        // Force reflow
+        next.offsetHeight;
+
+        // 2. Slide the active slide off to the left
+        active.style.transition = 'transform 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+        active.className = 'hero-slide exit';
+
+        // 3. Complete promotion
+        setTimeout(() => {
+          active.style.transition = 'none';
+          active.className = 'hero-slide';
+          active.offsetHeight; // Force reflow
+          
+          next.className = 'hero-slide active';
+          currentHeroIndex = nextIndex;
+        }, 1200);
+      }
+
+      setInterval(rotateHeroSlides, 5000);
+    }
+  </script>
+</body>
+</html>

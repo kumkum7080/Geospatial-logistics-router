@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Menu - BangaloreBites</title>
+  <link rel="stylesheet" href="/static/consumer/style.css?v=15">
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="header-container">
+      <a href="/bangalore" class="logo" id="header-logo"><span>Bangalore</span>Bites</a>
+      <div class="nav-actions">
+        <div class="user-badge" id="user-display"></div>
+        <a href="/bangalore" class="btn btn-secondary" id="back-search-btn" style="padding: 8px 16px; font-size: 14px;">Back to Search</a>
+        <button id="logout-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">Logout</button>
+        <!-- Hamburger Menu Button -->
+        <button class="hamburger-btn" id="drawer-toggle-btn">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Side Drawer Backdrop Overlay -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+
+  <!-- Side Drawer Panel -->
+  <div class="side-drawer" id="side-drawer">
+    <button class="drawer-close-btn" id="drawer-close-btn">×</button>
+    <div class="drawer-header">
+      <div class="drawer-user-name" id="drawer-user-name">User Name</div>
+      <div class="drawer-user-tier" id="drawer-user-tier" style="border: 1px solid var(--text-muted); color: var(--text-secondary); padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-block;">Standard</div>
+    </div>
+    <nav class="drawer-menu">
+      <a href="/bangalore" class="drawer-item" id="drawer-link-home">🍽️ Browse Kitchens</a>
+      <a href="/checkout" class="drawer-item">🛒 View Basket / Cart</a>
+      
+      <!-- Category Quick Links in Drawer -->
+      <div style="border-top: 1px solid var(--border-color); margin: 8px 0; padding-top: 8px;" id="drawer-categories-section">
+        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); padding: 8px 14px; font-weight: 700; letter-spacing: 0.05em;">Categories</div>
+        <a href="#section-menu" class="drawer-item" onclick="closeDrawer()">🍳 Kitchen Menu</a>
+        <a href="#section-groceries" class="drawer-item" onclick="closeDrawer()">📦 Fulfillment Market</a>
+      </div>
+
+      <a href="#" class="drawer-item logout" id="drawer-logout-btn">🚪 Logout</a>
+    </nav>
+  </div>
+
+  <main>
+    <!-- Restaurant Header Info -->
+    <section class="restaurant-hero" id="restaurant-header">
+      <div class="restaurant-info">
+        <h1 id="restaurant-name">Loading Kitchen...</h1>
+        <div class="restaurant-meta">
+          <span id="restaurant-cuisines">Cuisines</span>
+          <span style="color: var(--text-muted);">|</span>
+          <span id="restaurant-hours">Hours</span>
+        </div>
+      </div>
+      <div>
+        <div class="rating-badge" id="restaurant-rating" style="font-size: 18px; padding: 6px 12px;">-- ★</div>
+      </div>
+    </section>
+
+    <!-- Main Content Layout - Full Width Vertical Stack -->
+    <div class="menu-layout-full">
+      <section>
+        <!-- Restaurant Menu Section -->
+        <div id="section-menu" class="menu-section">
+          <h2 class="menu-section-title">Freshly Prepared Dishes</h2>
+          <div id="menu-items-list" style="display:flex; flex-direction:column; gap:16px;">
+            <!-- Dynamic Menu Items -->
+          </div>
+        </div>
+
+        <!-- Dark Store Groceries Section -->
+        <div id="section-groceries" class="menu-section">
+          <h2 class="menu-section-title">Essential Groceries (Fulfillment Hub)</h2>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; margin-top: -16px;">
+            Items delivered directly from our micro-fulfillment dark store.
+          </p>
+          <div id="grocery-items-list" style="display:flex; flex-direction:column; gap:16px;">
+            <!-- Dynamic Grocery Items -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Basket Section at the end of the page -->
+    <div style="margin-top: 48px; margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto;" id="bottom-basket-section">
+      <div class="sidebar-cart glass" style="position: static; width: 100%;">
+        <h3 class="cart-title" style="display: flex; align-items: center; gap: 8px;">🛒 Your Basket</h3>
+        <div id="cart-items-container" class="cart-items" style="max-height: none;">
+          <div style="text-align: center; color: var(--text-muted); padding: 24px 0;">Your basket is empty. Add delicious items to start.</div>
+        </div>
+        
+        <div class="cart-total-section">
+          <div class="cart-row">
+            <span>Subtotal</span>
+            <span id="cart-subtotal">₹0.00</span>
+          </div>
+          <div class="cart-row" style="font-size: 12px; color: var(--text-muted);">
+            <span>Surge multiplier</span>
+            <span id="cart-surge-tier">Standard (1.0x)</span>
+          </div>
+          <div class="cart-row-total">
+            <span>Total Estimated</span>
+            <span id="cart-grand-total">₹0.00</span>
+          </div>
+          <button id="checkout-btn" class="btn btn-primary" style="width: 100%; margin-top: 16px;" disabled>
+            Proceed to Checkout
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 1. Session Auth Guard
+    const sessionStr = localStorage.getItem('customer_session');
+    if (!sessionStr) {
+      window.location.href = '/login';
+    }
+    const session = JSON.parse(sessionStr);
+    
+    // Resolve City Name prefix dynamically
+    const isBangalore = window.location.pathname.startsWith('/bangalore');
+    const cityPrefix = isBangalore ? '/bangalore' : '/delhi';
+    document.getElementById('header-logo').href = cityPrefix;
+    document.getElementById('back-search-btn').href = cityPrefix;
+    document.getElementById('drawer-link-home').href = cityPrefix;
+    
+    // Display session details
+    document.getElementById('user-display').innerHTML = `Welcome, <strong>${session.full_name}</strong>`;
+
+    // --- ☰ SIDE DRAWER CONTROLS ---
+    const overlay = document.getElementById('drawer-overlay');
+    const drawer = document.getElementById('side-drawer');
+    const toggleBtn = document.getElementById('drawer-toggle-btn');
+    const closeBtn = document.getElementById('drawer-close-btn');
+
+    function openDrawer() {
+      overlay.classList.add('open');
+      drawer.classList.add('open');
+      
+      document.getElementById('drawer-user-name').textContent = session.full_name;
+      const tierBadge = document.getElementById('drawer-user-tier');
+      tierBadge.textContent = session.tier.replace('_', ' ');
+      const tColors = { 'Premium_VIP': '#F59E0B', 'Business': '#10B981', 'Standard': '#A0A5B5' };
+      tierBadge.style.color = tColors[session.tier] || '#FFF';
+      tierBadge.style.borderColor = tColors[session.tier] || '#FFF';
+    }
+
+    function closeDrawer() {
+      overlay.classList.remove('open');
+      drawer.classList.remove('open');
+    }
+
+    toggleBtn.addEventListener('click', openDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+
+    document.getElementById('drawer-logout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+
+    // 2. State Management
+    let menuData = { restaurant: null, menu: [], groceries: [] };
+    let cart = {}; // Key: item_id, Value: { item_id, name, price, quantity, type }
+
+    // Parse restaurant slug from URL path: /bangalore/{slug}
+    const pathParts = window.location.pathname.split('/');
+    const slug = pathParts[pathParts.length - 1];
+
+    // Curated catalog of 22 high-resolution food assets from Unsplash for fallback
+    const fallbackImages = [
+      "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=1000&auto=format&fit=crop&q=80", // Biryani 1
+      "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=1000&auto=format&fit=crop&q=80", // Dosa
+      "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=1000&auto=format&fit=crop&q=80", // North Indian Paneer
+      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1000&auto=format&fit=crop&q=80", // Burger
+      "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1000&auto=format&fit=crop&q=80", // Pizza 1
+      "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=1000&auto=format&fit=crop&q=80", // Dessert Cake
+      "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=1000&auto=format&fit=crop&q=80", // Pasta
+      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1000&auto=format&fit=crop&q=80", // Salad
+      "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=1000&auto=format&fit=crop&q=80", // Sushi
+      "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=1000&auto=format&fit=crop&q=80", // Noodles
+      "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=1000&auto=format&fit=crop&q=80", // Sandwich
+      "https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=1000&auto=format&fit=crop&q=80", // Samosa
+      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1000&auto=format&fit=crop&q=80", // Coffee Cup
+      "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=1000&auto=format&fit=crop&q=80", // Ice Cream
+      "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=1000&auto=format&fit=crop&q=80", // Biryani 2
+      "https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=1000&auto=format&fit=crop&q=80", // South Indian Thali
+      "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=1000&auto=format&fit=crop&q=80", // Tandoori Chicken
+      "https://images.unsplash.com/photo-1547592165-e1d17f1a0655?w=1000&auto=format&fit=crop&q=80", // Soup Bowl
+      "https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=1000&auto=format&fit=crop&q=80", // Pancakes Stack
+      "https://images.unsplash.com/photo-1536935338788-846bb9981813?w=1000&auto=format&fit=crop&q=80", // Juice Mocktails
+      "https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=1000&auto=format&fit=crop&q=80", // Kebab Rolls
+      "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=1000&auto=format&fit=crop&q=80"  // Pizza 2
+    ];
+
+    function getFallbackImage(id) {
+      if (!id) id = String(Math.random());
+      id = String(id);
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const index = Math.abs(hash) % fallbackImages.length;
+      return fallbackImages[index];
+    }
+
+    function getRestaurantImage(cuisines, id) {
+      if (!id) id = String(Math.random());
+      id = String(id);
+      
+      let keyword = "food,dish";
+      const lowerCuisines = String(cuisines || "").toLowerCase();
+      
+      if (lowerCuisines.includes("biryani") || lowerCuisines.includes("rice")) {
+        keyword = "biryani,rice";
+      } else if (lowerCuisines.includes("dosa") || lowerCuisines.includes("south indian") || lowerCuisines.includes("idli")) {
+        keyword = "dosa,idli";
+      } else if (lowerCuisines.includes("pizza")) {
+        keyword = "pizza";
+      } else if (lowerCuisines.includes("burger")) {
+        keyword = "burger";
+      } else if (lowerCuisines.includes("dessert") || lowerCuisines.includes("sweet") || lowerCuisines.includes("cake") || lowerCuisines.includes("ice cream")) {
+        keyword = "dessert,cake";
+      } else if (lowerCuisines.includes("coffee") || lowerCuisines.includes("tea") || lowerCuisines.includes("beverage") || lowerCuisines.includes("cafe")) {
+        keyword = "coffee,drink";
+      } else if (lowerCuisines.includes("noodle") || lowerCuisines.includes("chinese") || lowerCuisines.includes("pasta")) {
+        keyword = "noodles,pasta";
+      } else if (lowerCuisines.includes("north indian") || lowerCuisines.includes("paneer") || lowerCuisines.includes("kebab") || lowerCuisines.includes("tandoori")) {
+        keyword = "kebab,curry";
+      } else if (lowerCuisines.includes("salad") || lowerCuisines.includes("healthy")) {
+        keyword = "salad,healthy";
+      }
+
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const seed = Math.abs(hash) % 1000;
+      
+      return `https://loremflickr.com/1000/600/${keyword}?lock=${seed}`;
+    }
+
+    // High-resolution dish matcher image dictionary
+    function getDishImage(dishName, id) {
+      if (!dishName) dishName = "";
+      if (!id) id = String(Math.random());
+      dishName = String(dishName);
+      id = String(id);
+      const lower = dishName.toLowerCase();
+      
+      if (lower.includes('dosa')) return "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('biryani') || lower.includes('rice') || lower.includes('pulav') || lower.includes('bath') || lower.includes('jeera') || lower.includes('khichdi')) return "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('paneer') || lower.includes('cottage')) return "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('chicken') || lower.includes('tikka') || lower.includes('kebab') || lower.includes('tandoori') || lower.includes('lolipop') || lower.includes('wings')) return "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('roti') || lower.includes('paratha') || lower.includes('phulka') || lower.includes('chapati') || lower.includes('parotta')) return "https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('naan') || lower.includes('kulcha') || lower.includes('bread') || lower.includes('bun')) return "https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('samosa') || lower.includes('snack') || lower.includes('chaat') || lower.includes('pakora') || lower.includes('bhaji') || lower.includes('kachori')) return "https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('idli') || lower.includes('vada') || lower.includes('idly')) return "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('coffee') || lower.includes('tea') || lower.includes('chai') || lower.includes('filter')) return "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('burger')) return "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('pizza')) return "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('dessert') || lower.includes('cake') || lower.includes('sweet') || lower.includes('jamun') || lower.includes('halwa') || lower.includes('kheer')) return "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('ice cream') || lower.includes('kulfi') || lower.includes('sundae')) return "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('salad') || lower.includes('healthy') || lower.includes('fruit')) return "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('milk') || lower.includes('organic') || lower.includes('dairy') || lower.includes('curd') || lower.includes('butter') || lower.includes('ghee')) return "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('gobi') || lower.includes('manchurian') || lower.includes('chilli') || lower.includes('fried') || lower.includes('dry')) return "https://images.unsplash.com/photo-1626132647523-66f5bf380027?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('noodles') || lower.includes('hakka') || lower.includes('chow') || lower.includes('schezwan')) return "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('thali') || lower.includes('meals') || lower.includes('meal')) return "https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('dal') || lower.includes('tadka') || lower.includes('fry') || lower.includes('sambhar') || lower.includes('sambar') || lower.includes('curry') || lower.includes('gravy') || lower.includes('masala')) return "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('juice') || lower.includes('shake') || lower.includes('beverage') || lower.includes('soda') || lower.includes('lassi') || lower.includes('drink') || lower.includes('water') || lower.includes('coke') || lower.includes('pepsi')) return "https://images.unsplash.com/photo-1536935338788-846bb9981813?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('seafood') || lower.includes('fish') || lower.includes('crab') || lower.includes('prawn') || lower.includes('shrimp')) return "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('mutton') || lower.includes('lamb') || lower.includes('egg') || lower.includes('omelette')) return "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('poori') || lower.includes('puri') || lower.includes('bhatura') || lower.includes('chole') || lower.includes('chana') || lower.includes('aloo') || lower.includes('dum')) return "https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=400&auto=format&fit=crop&q=80";
+      if (lower.includes('rolls') || lower.includes('wrap') || lower.includes('shawarma') || lower.includes('roll') || lower.includes('kathi')) return "https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=400&auto=format&fit=crop&q=80";
+
+      const defaults = [
+        "https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80"
+      ];
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return defaults[Math.abs(hash) % defaults.length];
+    }
+
+    // Load menu data
+    async function loadMenu() {
+      try {
+        const response = await fetch(`/api/restaurants/${slug}/menu`);
+        if (!response.ok) throw new Error('Failed to load menu details');
+        menuData = await response.json();
+
+        // Populate Restaurant Header
+        document.getElementById('restaurant-name').textContent = menuData.restaurant.name;
+        document.getElementById('restaurant-cuisines').textContent = menuData.restaurant.cuisine_types;
+        document.getElementById('restaurant-hours').textContent = `Open: ${menuData.restaurant.open_closed_hours}`;
+        document.getElementById('restaurant-rating').innerHTML = `${menuData.restaurant.rating_avg.toFixed(1)} ★`;
+
+        const restImage = menuData.restaurant.image_url ? menuData.restaurant.image_url : getRestaurantImage(menuData.restaurant.cuisine_types, menuData.restaurant.merchant_id);
+        const headerEl = document.getElementById('restaurant-header');
+        
+        // Background loading to handle errors and fallback smoothly
+        const img = new Image();
+        img.src = restImage;
+        img.onload = () => {
+          headerEl.style.backgroundImage = `linear-gradient(180deg, rgba(5, 5, 7, 0.4) 0%, rgba(5, 5, 7, 0.9) 100%), url('${restImage}')`;
+        };
+        img.onerror = () => {
+          const fallbackUrl = getFallbackImage(menuData.restaurant.merchant_id);
+          headerEl.style.backgroundImage = `linear-gradient(180deg, rgba(5, 5, 7, 0.4) 0%, rgba(5, 5, 7, 0.9) 100%), url('${fallbackUrl}')`;
+        };
+        headerEl.style.backgroundSize = 'cover';
+        headerEl.style.backgroundPosition = 'center';
+
+        // Render Prepared Dishes
+        const menuList = document.getElementById('menu-items-list');
+        menuList.innerHTML = '';
+        if (menuData.menu.length === 0) {
+          menuList.innerHTML = '<div style="color: var(--text-secondary); padding:16px; grid-column: 1/-1;">No menu dishes available today.</div>';
+        } else {
+          menuData.menu.forEach(item => {
+            menuList.appendChild(createItemCard(item, 'MENU', 'RESTAURANT'));
+          });
+        }
+
+        // Render Groceries
+        const groceryList = document.getElementById('grocery-items-list');
+        groceryList.innerHTML = '';
+        if (menuData.groceries.length === 0) {
+          groceryList.innerHTML = '<div style="color: var(--text-secondary); padding:16px; grid-column: 1/-1;">No grocery items available in fulfillment dark store.</div>';
+        } else {
+          menuData.groceries.forEach(item => {
+            groceryList.appendChild(createItemCard(item, 'PROD', 'MFC'));
+          });
+        }
+
+        // Load existing cart if any
+        const savedCart = sessionStorage.getItem('customer_cart');
+        if (savedCart) {
+          const parsed = JSON.parse(savedCart);
+          if (parsed.restaurant_id === menuData.restaurant.merchant_id) {
+            cart = parsed.items;
+            updateCartUI();
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('restaurant-name').textContent = 'Restaurant Not Found';
+        document.getElementById('menu-items-list').innerHTML = '<div style="color: #FF6B76; grid-column: 1/-1;">Error loading catalog. Check server database logs.</div>';
+      }
+    }
+
+    // Create item DOM element (Visual design updated to horizontal card for vertical list layout!)
+    function createItemCard(item, idPrefix, type) {
+      const itemId = item.menu_item_id || item.product_id;
+      const itemName = item.item_name || item.product_name;
+      const itemPrice = item.price;
+      const stockInfo = item.quantity_on_hand !== undefined ? `Stock: ${item.quantity_on_hand} left` : 'Freshly Prepared';
+      
+      const itemImage = item.image_url ? item.image_url : getDishImage(itemName, itemId);
+
+      const div = document.createElement('div');
+      div.className = 'menu-item-card glass';
+      div.style.display = 'flex';
+      div.style.gap = '20px';
+      div.style.alignItems = 'center';
+      div.style.padding = '16px';
+      div.style.borderRadius = '12px';
+      div.style.marginBottom = '0'; // Controlled by flex gap
+
+      div.innerHTML = `
+        <img src="${itemImage}" style="width: 120px; height: 120px; border-radius: 8px; object-fit: cover; flex-shrink: 0;" alt="${itemName}">
+        <div class="menu-item-info" style="flex-grow: 1;">
+          <h3 style="font-size:18px; margin-bottom: 6px; color:#FFFFFF;">${itemName}</h3>
+          <p class="menu-item-desc" style="font-size:12px; color:var(--text-secondary); margin-bottom: 4px;">${stockInfo} • Delivery within SLA</p>
+          <p class="menu-item-price" style="color:#FFF; font-weight:700; font-size:16px;">₹${itemPrice.toFixed(2)}</p>
+        </div>
+        <div class="item-action" id="action-${itemId}" style="flex-shrink: 0;">
+          <button class="btn btn-primary" onclick="addToCart('${itemId}', '${itemName.replace(/'/g, "\\'")}', ${itemPrice}, '${type}')" style="padding: 8px 16px; font-size: 13px;">
+            ADD
+          </button>
+        </div>
+      `;
+      return div;
+    }
+
+    // Cart modification actions
+    window.addToCart = function(itemId, name, price, type) {
+      cart[itemId] = {
+        item_id: itemId,
+        name: name,
+        price: price,
+        quantity: 1,
+        type: type
+      };
+      updateCartUI();
+    };
+
+    window.adjustQty = function(itemId, amount) {
+      if (!cart[itemId]) return;
+      cart[itemId].quantity += amount;
+      if (cart[itemId].quantity <= 0) {
+        delete cart[itemId];
+      }
+      updateCartUI();
+    };
+
+    // Update Cart UI & synchronize adjusters for bottom basket block
+    function updateCartUI() {
+      menuData.menu.forEach(item => updateItemAdjuster(item.menu_item_id));
+      menuData.groceries.forEach(item => updateItemAdjuster(item.product_id));
+
+      const container = document.getElementById('cart-items-container');
+      const checkoutBtn = document.getElementById('checkout-btn');
+
+      const keys = Object.keys(cart);
+      if (keys.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 24px 0;">Your basket is empty. Add delicious items to start.</div>';
+        checkoutBtn.disabled = true;
+        document.getElementById('cart-subtotal').textContent = '₹0.00';
+        document.getElementById('cart-grand-total').textContent = '₹0.00';
+        document.getElementById('cart-surge-tier').textContent = 'Standard (1.0x)';
+        sessionStorage.removeItem('customer_cart');
+        return;
+      }
+
+      container.innerHTML = '';
+      let subtotal = 0.0;
+
+      keys.forEach(key => {
+        const item = cart[key];
+        const cost = item.price * item.quantity;
+        subtotal += cost;
+
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+        row.style.padding = '8px 0';
+        row.style.borderBottom = '1px solid var(--border-color)';
+        row.innerHTML = `
+          <div class="cart-item-name" style="font-weight: 500; font-size: 15px; max-width: none;">${item.name}</div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="quantity-adjuster" style="border-radius: 4px; height: 28px;">
+              <button class="quantity-btn" onclick="adjustQty('${item.item_id}', -1)" style="width:28px; height:28px; font-size:14px;">-</button>
+              <div class="quantity-val" style="width:20px; font-size:12px;">${item.quantity}</div>
+              <button class="quantity-btn" onclick="adjustQty('${item.item_id}', 1)" style="width:28px; height:28px; font-size:14px;">+</button>
+            </div>
+            <span style="font-weight:600; width:70px; text-align:right;">₹${cost.toFixed(2)}</span>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      document.getElementById('cart-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+      
+      let surge = 1.0;
+      let surgeText = 'Standard (1.0x)';
+      
+      if (session.tier === 'Premium_VIP') {
+        surgeText = 'VIP Surge Waiver (1.0x)';
+      } else {
+        if (keys.length >= 3) {
+          surge = 1.5;
+          surgeText = 'Peak Surge Active (1.5x)';
+        }
+      }
+
+      const grandTotal = subtotal * surge;
+      document.getElementById('cart-surge-tier').textContent = surgeText;
+      document.getElementById('cart-grand-total').textContent = `₹${grandTotal.toFixed(2)}`;
+      checkoutBtn.disabled = false;
+
+      // Save to sessionStorage
+      sessionStorage.setItem('customer_cart', JSON.stringify({
+        restaurant_id: menuData.restaurant.merchant_id,
+        restaurant_name: menuData.restaurant.name,
+        items: cart,
+        subtotal: subtotal,
+        surge: surge,
+        total: grandTotal
+      }));
+    }
+
+    function updateItemAdjuster(itemId) {
+      const widget = document.getElementById(`action-${itemId}`);
+      if (!widget) return;
+
+      const itemInCart = cart[itemId];
+      if (itemInCart) {
+        widget.innerHTML = `
+          <div class="quantity-adjuster" style="border-radius: 4px;">
+            <button class="quantity-btn" onclick="adjustQty('${itemId}', -1)">-</button>
+            <div class="quantity-val">${itemInCart.quantity}</div>
+            <button class="quantity-btn" onclick="adjustQty('${itemId}', 1)">+</button>
+          </div>
+        `;
+      } else {
+        const itemInfo = menuData.menu.find(i => i.menu_item_id === itemId) || menuData.groceries.find(g => g.product_id === itemId);
+        if (itemInfo) {
+          const type = itemInfo.menu_item_id ? 'RESTAURANT' : 'MFC';
+          widget.innerHTML = `
+            <button class="btn btn-primary" onclick="addToCart('${itemId}', '${(itemInfo.item_name || itemInfo.product_name).replace(/'/g, "\\'")}', ${itemInfo.price}, '${type}')" style="padding: 8px 16px; font-size: 13px;">
+              ADD
+            </button>
+          `;
+        }
+      }
+    }
+    document.getElementById('checkout-btn').addEventListener('click', () => {
+      window.location.href = '/checkout/address';
+    });
+
+    loadMenu();
+  </script>
+</body>
+</html>

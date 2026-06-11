@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delivery Address - BangaloreBites</title>
+  <link rel="stylesheet" href="/static/consumer/style.css?v=15">
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="header-container">
+      <a href="/bangalore" class="logo" id="checkout-logo"><span>Bangalore</span>Bites</a>
+      <div class="nav-actions">
+        <div class="user-badge" id="user-display"></div>
+        <button onclick="window.history.back()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">Back to Menu</button>
+        <button id="logout-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">Logout</button>
+        <!-- Hamburger Menu Button -->
+        <button class="hamburger-btn" id="drawer-toggle-btn">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Side Drawer Backdrop Overlay -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+
+  <!-- Side Drawer Panel -->
+  <div class="side-drawer" id="side-drawer">
+    <button class="drawer-close-btn" id="drawer-close-btn">×</button>
+    <div class="drawer-header">
+      <div class="drawer-user-name" id="drawer-user-name">User Name</div>
+      <div class="drawer-user-tier" id="drawer-user-tier" style="border: 1px solid var(--text-muted); color: var(--text-secondary); padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-block;">Standard</div>
+    </div>
+    <nav class="drawer-menu">
+      <a href="/bangalore" class="drawer-item" id="drawer-link-home">🍽️ Browse Kitchens</a>
+      <a href="/checkout" class="drawer-item active">🛒 View Basket / Cart</a>
+      <a href="#" class="drawer-item logout" id="drawer-logout-btn">🚪 Logout</a>
+    </nav>
+  </div>
+
+  <main>
+    <h1 style="font-size: 32px; margin-bottom: 24px; font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 12px;">
+      📍 Set Delivery Address
+    </h1>
+
+    <div class="checkout-layout">
+      <!-- Left: Delivery Coordinates & Address Picker -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        <section class="glass" style="padding: 24px; border-radius: var(--border-radius-md);">
+          <h2 style="font-size: 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            📍 1. Delivery Coordinates & Address
+          </h2>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+            Drag the red pin on the map to mark your home. We use this for real-time OSRM driver routing.
+          </p>
+
+          <!-- Leaflet Map Container -->
+          <div id="location-picker-map" style="height: 320px; margin-bottom: 16px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);"></div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Latitude</label>
+              <input type="text" id="lat-display" class="form-input" style="color: var(--text-secondary);" readonly>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Longitude</label>
+              <input type="text" id="lng-display" class="form-input" style="color: var(--text-secondary);" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="house-details">House / Flat Number & Building</label>
+            <input type="text" id="house-details" class="form-input" placeholder="e.g. Flat 402, Signature Residency" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="street-details">Street / Landmark</label>
+            <input type="text" id="street-details" class="form-input" placeholder="e.g. Near Chinnaswamy Stadium, MG Road" required>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right: Summary & Checkout Trigger -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        <aside class="sidebar-cart glass" style="position: static; width: 100%; padding: 24px;">
+          <h3 class="cart-title">Order Summary</h3>
+          
+          <div class="cart-total-section" style="border-top: none; padding-top: 0; margin-top: 0;">
+            <div class="cart-row-total" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+              <span>Grand Total</span>
+              <span id="summary-total" style="color: var(--accent-color); font-size: 24px;">₹0.00</span>
+            </div>
+
+            <button id="pay-btn" class="btn btn-primary" style="width: 100%; margin-top: 24px; font-size: 16px; padding: 14px 20px;">
+              Proceed to Payment
+            </button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <!-- Processing Modal Overlay -->
+  <div id="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 10, 12, 0.9); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
+    <div class="glass" style="max-width: 460px; width: 90%; padding: 40px; border-radius: var(--border-radius-lg); text-align: center; border-color: rgba(226, 55, 68, 0.3);">
+      <div style="width: 64px; height: 64px; border: 4px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 24px;"></div>
+      <h3 id="modal-title" style="font-size: 22px; margin-bottom: 8px;">Processing Order...</h3>
+      <p id="modal-desc" style="color: var(--text-secondary); font-size: 14px; line-height: 1.5;">Securing in-memory inventory locks and solving spatial algorithms...</p>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    // 1. Session & Cart Auth Checks
+    const sessionStr = localStorage.getItem('customer_session');
+    if (!sessionStr) {
+      window.location.href = '/login';
+    }
+    const session = JSON.parse(sessionStr);
+    document.getElementById('user-display').innerHTML = `Welcome, <strong>${session.full_name}</strong>`;
+
+    // Dynamic logo destination
+    const isBangalore = window.location.pathname.startsWith('/bangalore') || true;
+    const cityPrefix = isBangalore ? '/bangalore' : '/delhi';
+    document.getElementById('checkout-logo').href = cityPrefix;
+    document.getElementById('drawer-link-home').href = cityPrefix;
+
+    // --- ☰ SIDE DRAWER CONTROLS ---
+    const overlay = document.getElementById('drawer-overlay');
+    const drawer = document.getElementById('side-drawer');
+    const toggleBtn = document.getElementById('drawer-toggle-btn');
+    const closeBtn = document.getElementById('drawer-close-btn');
+
+    function openDrawer() {
+      overlay.classList.add('open');
+      drawer.classList.add('open');
+      document.getElementById('drawer-user-name').textContent = session.full_name;
+      const tierBadge = document.getElementById('drawer-user-tier');
+      tierBadge.textContent = session.tier.replace('_', ' ');
+      const tColors = { 'Premium_VIP': '#F59E0B', 'Business': '#10B981', 'Standard': '#A0A5B5' };
+      tierBadge.style.color = tColors[session.tier] || '#FFF';
+      tierBadge.style.borderColor = tColors[session.tier] || '#FFF';
+    }
+
+    function closeDrawer() {
+      overlay.classList.remove('open');
+      drawer.classList.remove('open');
+    }
+
+    toggleBtn.addEventListener('click', openDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+
+    document.getElementById('drawer-logout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    let cartData = null;
+    const cartStr = sessionStorage.getItem('customer_cart');
+    if (cartStr) {
+      cartData = JSON.parse(cartStr);
+    }
+
+    function loadCartFromStorage() {
+      if (!cartData) {
+        alert('Your basket is empty. Redirecting...');
+        window.location.href = cityPrefix;
+        return;
+      }
+      if (cartData.house_details) {
+        document.getElementById('house-details').value = cartData.house_details;
+      }
+      if (cartData.street_details) {
+        document.getElementById('street-details').value = cartData.street_details;
+      }
+      document.getElementById('summary-total').textContent = `₹${cartData.total.toFixed(2)}`;
+    }
+
+    // 2. Leaflet Location Selection Initialization (Centered on Bangalore)
+    const defaultLat = (cartData && cartData.latitude) ? cartData.latitude : 12.9716;
+    const defaultLng = (cartData && cartData.longitude) ? cartData.longitude : 77.5946;
+
+    document.getElementById('lat-display').value = defaultLat.toFixed(6);
+    document.getElementById('lng-display').value = defaultLng.toFixed(6);
+
+    const map = L.map('location-picker-map').setView([defaultLat, defaultLng], 14);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      maxZoom: 20
+    }).addTo(map);
+
+    const marker = L.marker([defaultLat, defaultLng], {
+      draggable: true
+    }).addTo(map);
+
+    marker.on('dragend', function (e) {
+      const position = marker.getLatLng();
+      document.getElementById('lat-display').value = position.lat.toFixed(6);
+      document.getElementById('lng-display').value = position.lng.toFixed(6);
+    });
+
+    map.on('click', function (e) {
+      marker.setLatLng(e.latlng);
+      document.getElementById('lat-display').value = e.latlng.lat.toFixed(6);
+      document.getElementById('lng-display').value = e.latlng.lng.toFixed(6);
+    });
+
+    // 3. Save Address & Redirect to Payment Page
+    document.getElementById('pay-btn').addEventListener('click', () => {
+      const lat = parseFloat(document.getElementById('lat-display').value);
+      const lng = parseFloat(document.getElementById('lng-display').value);
+      const house = document.getElementById('house-details').value.trim();
+      const street = document.getElementById('street-details').value.trim();
+
+      if (!house || !street) {
+        alert('Please fill out your house details and street address so the rider can locate you!');
+        return;
+      }
+      
+      // Save details to sessionStorage
+      cartData.latitude = lat;
+      cartData.longitude = lng;
+      cartData.delivery_address = house + ", " + street;
+      cartData.house_details = house;
+      cartData.street_details = street;
+      sessionStorage.setItem('customer_cart', JSON.stringify(cartData));
+
+      // Redirect to Payment page
+      window.location.href = '/checkout';
+    });
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Run startup
+    loadCartFromStorage();
+  </script>
+</body>
+</html>

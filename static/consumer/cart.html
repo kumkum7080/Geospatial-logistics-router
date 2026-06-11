@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Checkout - BangaloreBites</title>
+  <link rel="stylesheet" href="/static/consumer/style.css?v=15">
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="header-container">
+      <a href="/bangalore" class="logo" id="checkout-logo"><span>Bangalore</span>Bites</a>
+      <div class="nav-actions">
+        <div class="user-badge" id="user-display"></div>
+        <button onclick="window.location.href='/checkout/address'" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">Back to Address</button>
+        <button id="logout-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">Logout</button>
+        <!-- Hamburger Menu Button -->
+        <button class="hamburger-btn" id="drawer-toggle-btn">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Side Drawer Backdrop Overlay -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+
+  <!-- Side Drawer Panel -->
+  <div class="side-drawer" id="side-drawer">
+    <button class="drawer-close-btn" id="drawer-close-btn">×</button>
+    <div class="drawer-header">
+      <div class="drawer-user-name" id="drawer-user-name">User Name</div>
+      <div class="drawer-user-tier" id="drawer-user-tier" style="border: 1px solid var(--text-muted); color: var(--text-secondary); padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-block;">Standard</div>
+    </div>
+    <nav class="drawer-menu">
+      <a href="/bangalore" class="drawer-item" id="drawer-link-home">🍽️ Browse Kitchens</a>
+      <a href="/checkout" class="drawer-item active">🛒 View Basket / Cart</a>
+      <a href="#" class="drawer-item logout" id="drawer-logout-btn">🚪 Logout</a>
+    </nav>
+  </div>
+
+  <main>
+    <h1 style="font-size: 32px; margin-bottom: 24px; font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 12px;">
+      💳 Complete Payment & Order
+    </h1>
+
+    <div class="checkout-layout">
+      <!-- Left: Location Selection, Address, Review Items -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- Selected Delivery Location Details -->
+        <section class="glass" style="padding: 24px; border-radius: var(--border-radius-md);">
+          <h2 style="font-size: 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            📍 Delivery Location
+          </h2>
+          <div style="font-size: 14px; line-height: 1.5; color: #FFFFFF;" id="summary-address-text">
+            Loading delivery coordinates...
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 6px;" id="summary-coordinates-text">
+            Lat: --, Lng: --
+          </div>
+          <a href="/checkout/address" style="display: inline-block; margin-top: 12px; font-size: 13px; color: var(--accent-color); text-decoration: none; font-weight: 600;"><i class="fa-solid fa-pen-to-square"></i> Change Address</a>
+        </section>
+
+        <!-- Basket Items List -->
+        <section class="glass" style="padding: 24px; border-radius: var(--border-radius-md);">
+          <h2 style="font-size: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            🛒 Review Basket Items
+          </h2>
+          <div id="checkout-items-list" class="cart-items" style="max-height: none; margin-bottom: 0;">
+            <!-- Dynamically populated with quantity adjusters -->
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right: Billing Ledger (Taxes & Fees) & Select Payment Option -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- Detailed Invoice Calculations -->
+        <aside class="sidebar-cart glass" style="position: static; width: 100%; padding: 24px;">
+          <h3 class="cart-title" style="margin-bottom: 16px;">🧾 Bill Details</h3>
+          
+          <div class="cart-total-section" style="border-top: none; padding-top: 0; margin-top: 0;">
+            
+            <div class="cart-row">
+              <span>Item Subtotal</span>
+              <span id="summary-subtotal">₹0.00</span>
+            </div>
+
+            <div class="cart-row" id="surge-row" style="display: none;">
+              <span>Surge Charge (<span id="summary-surge-multiplier">1.0</span>x)</span>
+              <span id="summary-surge-amount">₹0.00</span>
+            </div>
+
+            <div class="cart-row">
+              <span>Platform Fee</span>
+              <span>₹10.00</span>
+            </div>
+
+            <div class="cart-row">
+              <span>Delivery Partner Fee</span>
+              <span id="summary-delivery">₹40.00</span>
+            </div>
+
+            <div class="cart-row">
+              <span>GST & Restaurant Taxes (5%)</span>
+              <span id="summary-taxes">₹0.00</span>
+            </div>
+
+            <div class="cart-row-total" style="margin-top: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 20px;">
+              <span>Grand Total</span>
+              <span id="summary-total" style="color: var(--accent-color); font-size: 24px;">₹0.00</span>
+            </div>
+
+            <!-- Payment Options Action Grid -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                Select Payment Method to Complete Order
+              </div>
+              
+              <button onclick="confirmAndPlaceOrder('UPI')" class="btn-payment-option glass" style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 14px 18px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02); transition: var(--transition-normal); cursor: pointer; width: 100%;">
+                <span style="font-weight: 700; font-size: 15px; color: #FFFFFF; display: flex; align-items: center; gap: 8px;">
+                  ⚡ Pay via UPI
+                </span>
+                <span style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                  Instant checkout via Google Pay, PhonePe, Paytm
+                </span>
+              </button>
+
+              <button onclick="confirmAndPlaceOrder('CARD')" class="btn-payment-option glass" style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 14px 18px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02); transition: var(--transition-normal); cursor: pointer; width: 100%;">
+                <span style="font-weight: 700; font-size: 15px; color: #FFFFFF; display: flex; align-items: center; gap: 8px;">
+                  💳 Pay via Credit / Debit Card
+                </span>
+                <span style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                  Visa, Mastercard, RuPay & Diner's Club
+                </span>
+              </button>
+
+              <button onclick="confirmAndPlaceOrder('COD')" class="btn-payment-option glass" style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 14px 18px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02); transition: var(--transition-normal); cursor: pointer; width: 100%;">
+                <span style="font-weight: 700; font-size: 15px; color: #FFFFFF; display: flex; align-items: center; gap: 8px;">
+                  💵 Cash on Delivery (COD)
+                </span>
+                <span style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                  Pay with cash or UPI scan when rider arrives
+                </span>
+              </button>
+            </div>
+
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Processing Modal Overlay -->
+  <div id="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 10, 12, 0.9); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
+    <div class="glass" style="max-width: 460px; width: 90%; padding: 40px; border-radius: var(--border-radius-lg); text-align: center; border-color: rgba(226, 55, 68, 0.3);">
+      <div style="width: 64px; height: 64px; border: 4px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 24px;"></div>
+      <h3 id="modal-title" style="font-size: 22px; margin-bottom: 8px;">Processing Order...</h3>
+      <p id="modal-desc" style="color: var(--text-secondary); font-size: 14px; line-height: 1.5;">Securing in-memory inventory locks and solving spatial algorithms...</p>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .btn-payment-option {
+      font-family: 'Outfit', sans-serif;
+      outline: none;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 0;
+    }
+    .btn-payment-option:hover {
+      border-color: var(--accent-color) !important;
+      background: rgba(226, 55, 68, 0.08) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(226, 55, 68, 0.15);
+    }
+    .btn-payment-option:active {
+      transform: translateY(0);
+    }
+  </style>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    // 1. Session & Cart Auth Checks
+    const sessionStr = localStorage.getItem('customer_session');
+    if (!sessionStr) {
+      window.location.href = '/login';
+    }
+    const session = JSON.parse(sessionStr);
+    document.getElementById('user-display').innerHTML = `Welcome, <strong>${session.full_name}</strong>`;
+
+    // Dynamic logo destination
+    const isBangalore = window.location.pathname.startsWith('/bangalore') || true;
+    const cityPrefix = isBangalore ? '/bangalore' : '/delhi';
+    document.getElementById('checkout-logo').href = cityPrefix;
+    document.getElementById('drawer-link-home').href = cityPrefix;
+
+    // --- ☰ SIDE DRAWER CONTROLS ---
+    const overlay = document.getElementById('drawer-overlay');
+    const drawer = document.getElementById('side-drawer');
+    const toggleBtn = document.getElementById('drawer-toggle-btn');
+    const closeBtn = document.getElementById('drawer-close-btn');
+
+    function openDrawer() {
+      overlay.classList.add('open');
+      drawer.classList.add('open');
+      
+      document.getElementById('drawer-user-name').textContent = session.full_name;
+      const tierBadge = document.getElementById('drawer-user-tier');
+      tierBadge.textContent = session.tier.replace('_', ' ');
+      const tColors = { 'Premium_VIP': '#F59E0B', 'Business': '#10B981', 'Standard': '#A0A5B5' };
+      tierBadge.style.color = tColors[session.tier] || '#FFF';
+      tierBadge.style.borderColor = tColors[session.tier] || '#FFF';
+    }
+
+    function closeDrawer() {
+      overlay.classList.remove('open');
+      drawer.classList.remove('open');
+    }
+
+    toggleBtn.addEventListener('click', openDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+
+    document.getElementById('drawer-logout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('customer_session');
+      window.location.href = '/login';
+    });
+
+    let cartData = null;
+
+    function loadCartFromStorage() {
+      const cartStr = sessionStorage.getItem('customer_cart');
+      if (!cartStr) {
+        alert('Your basket is empty. Please select a kitchen and add items first.');
+        window.location.href = cityPrefix;
+        return;
+      }
+      cartData = JSON.parse(cartStr);
+      
+      // If address details are missing, redirect to address selection first!
+      if (!cartData.delivery_address || !cartData.latitude || !cartData.longitude) {
+        alert('Please specify your delivery address first.');
+        window.location.href = '/checkout/address';
+        return;
+      }
+      
+      // Render delivery address texts
+      document.getElementById('summary-address-text').textContent = cartData.delivery_address;
+      document.getElementById('summary-coordinates-text').textContent = `Coordinates: Lat ${cartData.latitude.toFixed(4)}, Lng ${cartData.longitude.toFixed(4)}`;
+      
+      renderInvoice();
+    }
+
+    // 2. Render and Calculate Invoice (Taxes, Fees, Surge)
+    function renderInvoice() {
+      const listContainer = document.getElementById('checkout-items-list');
+      listContainer.innerHTML = '';
+      
+      const itemKeys = Object.keys(cartData.items);
+      
+      if (itemKeys.length === 0) {
+        alert('Your basket is empty. Redirecting...');
+        window.location.href = cityPrefix;
+        return;
+      }
+
+      itemKeys.forEach(key => {
+        const item = cartData.items[key];
+        const itemRow = document.createElement('div');
+        itemRow.className = 'cart-item';
+        itemRow.style.marginBottom = '16px';
+        itemRow.innerHTML = `
+          <div>
+            <strong style="display:block; font-size:14px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name}</strong>
+            <span style="font-size:11px; color:var(--text-muted);">${item.type.replace('_',' ')} • ₹${item.price.toFixed(2)}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="quantity-adjuster" style="border-radius: 4px;">
+              <button class="quantity-btn" style="width:24px; height:24px; font-size:14px;" onclick="adjustQty('${item.item_id}', -1)">-</button>
+              <div class="quantity-val" style="width:20px; font-size:12px;">${item.quantity}</div>
+              <button class="quantity-btn" style="width:24px; height:24px; font-size:14px;" onclick="adjustQty('${item.item_id}', 1)">+</button>
+            </div>
+            <span style="font-weight:600; width:60px; text-align:right;">₹${(item.price * item.quantity).toFixed(2)}</span>
+          </div>
+        `;
+        listContainer.appendChild(itemRow);
+      });
+
+      // --- MATHEMATICAL TAX CALCULATIONS ---
+      let itemSubtotal = 0.0;
+      itemKeys.forEach(key => {
+        const item = cartData.items[key];
+        itemSubtotal += item.price * item.quantity;
+      });
+
+      // Surge Fee calculation
+      const surgeMultiplier = cartData.surge || 1.0;
+      const surgeAmount = itemSubtotal * (surgeMultiplier - 1.0);
+      const surgeRow = document.getElementById('surge-row');
+      if (surgeMultiplier > 1.0) {
+        document.getElementById('summary-surge-multiplier').textContent = surgeMultiplier.toFixed(1);
+        document.getElementById('summary-surge-amount').textContent = `₹${surgeAmount.toFixed(2)}`;
+        surgeRow.style.display = 'flex';
+      } else {
+        surgeRow.style.display = 'none';
+      }
+
+      // Flat platform fee
+      const platformFee = 10.00;
+
+      // Delivery Partner fee (Waived for Premium VIP tier customers)
+      let deliveryFee = 40.00;
+      if (session.tier === 'Premium_VIP') {
+        deliveryFee = 0.00;
+        document.getElementById('summary-delivery').innerHTML = '<span style="color:#24963F; font-weight:700;">FREE</span> <span style="text-decoration:line-through; font-size:11px; color:var(--text-muted);">₹40.00</span>';
+      } else {
+        document.getElementById('summary-delivery').textContent = `₹${deliveryFee.toFixed(2)}`;
+      }
+
+      // GST and Restaurant Taxes: 5% applied on Item Subtotal + Surge Amount
+      const taxRate = 0.05;
+      const taxes = (itemSubtotal + surgeAmount) * taxRate;
+
+      // Grand Total
+      const grandTotal = itemSubtotal + surgeAmount + platformFee + deliveryFee + taxes;
+
+      // Populate billing texts
+      document.getElementById('summary-subtotal').textContent = `₹${itemSubtotal.toFixed(2)}`;
+      document.getElementById('summary-taxes').textContent = `₹${taxes.toFixed(2)}`;
+      document.getElementById('summary-total').textContent = `₹${grandTotal.toFixed(2)}`;
+
+      // Sync updated calculations back to sessionStorage so backend receives correct math
+      cartData.subtotal = itemSubtotal;
+      cartData.total = grandTotal;
+      sessionStorage.setItem('customer_cart', JSON.stringify(cartData));
+    }
+
+    // Adjust quantities directly on checkout page
+    window.adjustQty = function(itemId, amount) {
+      if (!cartData.items[itemId]) return;
+      cartData.items[itemId].quantity += amount;
+      if (cartData.items[itemId].quantity <= 0) {
+        delete cartData.items[itemId];
+      }
+      renderInvoice();
+    };
+
+    // 3. Submit Checkout & Place Order API Call
+    window.confirmAndPlaceOrder = async function(selectedPayment) {
+      if (!cartData) return;
+      
+      // Save selected payment mode back to sessionStorage cart
+      cartData.payment_method = selectedPayment;
+      sessionStorage.setItem('customer_cart', JSON.stringify(cartData));
+
+      const payloadItems = Object.keys(cartData.items).map(key => {
+        const item = cartData.items[key];
+        return {
+          item_id: item.item_id,
+          quantity: item.quantity,
+          price_per_unit: item.price
+        };
+      });
+
+      // Show Modal Overlay
+      const modal = document.getElementById('modal-overlay');
+      const modalTitle = document.getElementById('modal-title');
+      const modalDesc = document.getElementById('modal-desc');
+      modal.style.display = 'flex';
+
+      try {
+        await sleep(800);
+        modalTitle.textContent = "Acquiring DB Locks...";
+        modalDesc.textContent = "Preventing race conditions using atomic FOR UPDATE statements on stock tables...";
+        
+        await sleep(1000);
+        modalTitle.textContent = "Resolving Spatial Coordinates...";
+        modalDesc.textContent = "Analyzing geo-fencing polygon configurations and nearest-neighbor matching...";
+        
+        const response = await fetch('/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            customer_id: session.customer_id,
+            latitude: cartData.latitude,
+            longitude: cartData.longitude,
+            items: payloadItems,
+            delivery_address: cartData.delivery_address
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'SUCCESS') {
+          modalTitle.textContent = "Assigning Rider & Routing...";
+          const r = data.geospatial_dispatch_matrix;
+          const route = data.physical_route_telemetry;
+          modalDesc.textContent = `Driver ${r.assigned_delivery_rider} found. Total road distance is ${route.total_network_distance_km} km with calculated travel time of ${route.calculated_driving_time_mins} minutes.`;
+          
+          await sleep(2000);
+          
+          // Clear shopping cart
+          sessionStorage.removeItem('customer_cart');
+          
+          const trackingOrderId = data.transaction_ledger.sub_order_id;
+          window.location.href = `/order-status/${trackingOrderId}`;
+        } else {
+          modal.style.display = 'none';
+          alert('Checkout Transaction Denied: ' + (data.detail || 'Insufficient stock or invalid coordinates.'));
+        }
+      } catch (err) {
+        console.error(err);
+        modal.style.display = 'none';
+        alert('Server connection failed. Is the API server offline?');
+      }
+    };
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Run startup
+    loadCartFromStorage();
+  </script>
+</body>
+</html>

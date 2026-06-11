@@ -1,0 +1,257 @@
+<!-- C:\Users\kumku\.gemini\antigravity\scratch\geospatial_routing_system\static\merchant\register.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Registration | BiteFlow Kitchens</title>
+    <!-- Custom CSS Styles -->
+    <link rel="stylesheet" href="/static/merchant/style.css?v=5">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card glass-panel" style="max-width: 600px; padding: 30px;">
+            <div class="brand-header">
+                <span class="brand-logo">BiteFlow Kitchens</span>
+                <p class="brand-subtitle">Partner Registration & Live Kitchen Dashboard Linkage</p>
+            </div>
+            
+            <form id="register-form" onsubmit="handleRegister(event)">
+                <!-- Error/Success Alert Box -->
+                <div id="alert-box" class="form-group glass-panel" style="display: none; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <p id="alert-message" style="font-size: 0.9rem; font-weight: 500;"></p>
+                </div>
+
+                <!-- Section: Owner Details -->
+                <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+                    <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 16px;">
+                        <i class="fa-solid fa-user-tie" style="margin-right: 8px;"></i>Owner Account Details
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label class="form-label" for="owner-fullname">Full Name</label>
+                            <input type="text" id="owner-fullname" class="form-input" placeholder="e.g. Rahul Sharma" required />
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label class="form-label" for="owner-email">Email Address</label>
+                            <input type="email" id="owner-email" class="form-input" placeholder="e.g. rahul@kitchen.com" required />
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label class="form-label" for="owner-phone">Phone Number</label>
+                            <input type="text" id="owner-phone" class="form-input" placeholder="e.g. +91 98765 43210" required />
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label class="form-label" for="owner-username">Username (User ID)</label>
+                            <input type="text" id="owner-username" class="form-input" placeholder="e.g. rahul_kitchens" required />
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
+                        <label class="form-label" for="owner-password">Password</label>
+                        <input type="password" id="owner-password" class="form-input" placeholder="••••••••" required />
+                    </div>
+                </div>
+
+                <!-- Section: Kitchen details options -->
+                <div style="margin-bottom: 24px;">
+                    <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 16px;">
+                        <i class="fa-solid fa-utensils" style="margin-right: 8px;"></i>Restaurant Kitchen Linkage
+                    </h3>
+                    
+                    <div class="form-group" style="margin-bottom: 18px;">
+                        <label class="form-label">Linkage Option</label>
+                        <div style="display: flex; gap: 16px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                                <input type="radio" name="kitchen-option" value="existing" checked onchange="toggleKitchenSection('existing')" style="accent-color: var(--primary);">
+                                Link to Existing Seeded Kitchen
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                                <input type="radio" name="kitchen-option" value="new" onchange="toggleKitchenSection('new')" style="accent-color: var(--primary);">
+                                Register a New Kitchen
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Option A: Link Existing Kitchen -->
+                    <div id="section-existing" class="form-group">
+                        <label class="form-label" for="restaurant-select">Select Restaurant Kitchen</label>
+                        <select id="restaurant-select" class="form-select" required>
+                            <option value="" disabled selected>Retrieving active kitchens...</option>
+                        </select>
+                    </div>
+
+                    <!-- Option B: Create New Kitchen -->
+                    <div id="section-new" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label class="form-label" for="new-rest-name">Restaurant Name</label>
+                                <input type="text" id="new-rest-name" class="form-input" placeholder="e.g. Bella Pasta Kitchen" />
+                            </div>
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label class="form-label" for="new-rest-cuisines">Cuisine Types</label>
+                                <input type="text" id="new-rest-cuisines" class="form-input" placeholder="e.g. Italian, Pizza, Fast Food" />
+                            </div>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                            <i class="fa-solid fa-circle-info" style="color: var(--info); margin-right: 6px;"></i>
+                            New kitchens will be created with default coordinates near Bangalore center and populated with a starter menu.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 30px;">
+                    <button type="submit" class="btn-primary" id="btn-register">
+                        <span>Create Partner Account</span>
+                        <i class="fa-solid fa-user-plus"></i>
+                    </button>
+                </div>
+
+                <div style="margin-top: 20px; font-size: 0.9rem; color: var(--text-muted);">
+                    Already have a partner account? 
+                    <a href="/merchant" style="color: var(--primary); text-decoration: none; font-weight: 500;">Sign In here</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let restaurantsList = [];
+
+        // Toggle visibility between existing and new kitchen sections
+        function toggleKitchenSection(type) {
+            const sectionExisting = document.getElementById('section-existing');
+            const sectionNew = document.getElementById('section-new');
+            const selectElement = document.getElementById('restaurant-select');
+            const newRestName = document.getElementById('new-rest-name');
+            const newRestCuisines = document.getElementById('new-rest-cuisines');
+
+            if (type === 'existing') {
+                sectionExisting.style.display = 'block';
+                sectionNew.style.display = 'none';
+                selectElement.required = true;
+                newRestName.required = false;
+                newRestCuisines.required = false;
+            } else {
+                sectionExisting.style.display = 'none';
+                sectionNew.style.display = 'block';
+                selectElement.required = false;
+                newRestName.required = true;
+                newRestCuisines.required = true;
+            }
+        }
+
+        // Fetch active seeded restaurants for linkage
+        async function fetchRestaurants() {
+            try {
+                const response = await fetch('/api/merchant/restaurants');
+                if (!response.ok) throw new Error('API server returned error');
+                
+                restaurantsList = await response.json();
+                const selectElement = document.getElementById('restaurant-select');
+                
+                selectElement.innerHTML = '<option value="" disabled selected>Select kitchen to link...</option>';
+                
+                if (restaurantsList.length === 0) {
+                    selectElement.innerHTML = '<option value="" disabled>No active restaurants found.</option>';
+                    return;
+                }
+                
+                // Populate options
+                restaurantsList.forEach(rest => {
+                    const opt = document.createElement('option');
+                    opt.value = rest.merchant_id;
+                    opt.textContent = `${rest.name} (${rest.merchant_id})`;
+                    selectElement.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Failed to load restaurants:', err);
+                const selectElement = document.getElementById('restaurant-select');
+                selectElement.innerHTML = '<option value="" disabled>Connection failed. Retrying...</option>';
+                setTimeout(fetchRestaurants, 3000);
+            }
+        }
+
+        // Handle Registration form submit
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btn-register');
+            const alertBox = document.getElementById('alert-box');
+            const alertMsg = document.getElementById('alert-message');
+
+            // Collect form fields
+            const fullName = document.getElementById('owner-fullname').value;
+            const email = document.getElementById('owner-email').value;
+            const phone = document.getElementById('owner-phone').value;
+            const username = document.getElementById('owner-username').value;
+            const password = document.getElementById('owner-password').value;
+
+            const isNewKitchen = document.querySelector('input[name="kitchen-option"]:checked').value === 'new';
+            
+            let payload = {
+                user_id: username,
+                password: password,
+                full_name: fullName,
+                email: email,
+                phone_number: phone
+            };
+
+            if (isNewKitchen) {
+                payload.restaurant_name = document.getElementById('new-rest-name').value;
+                payload.cuisines = document.getElementById('new-rest-cuisines').value;
+            } else {
+                payload.merchant_id = document.getElementById('restaurant-select').value;
+            }
+
+            // Disable submit button during call
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.querySelector('span').textContent = 'Creating Account...';
+
+            try {
+                const response = await fetch('/api/merchant/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.detail || 'Registration failed');
+                }
+
+                // Show success message and redirect
+                alertBox.style.display = 'block';
+                alertBox.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                alertBox.style.background = 'rgba(16, 185, 129, 0.1)';
+                alertMsg.style.color = 'var(--accent)';
+                alertMsg.textContent = 'Account created successfully! Redirecting to login...';
+
+                setTimeout(() => {
+                    window.location.href = '/merchant';
+                }, 2000);
+
+            } catch (err) {
+                console.error('Registration Error:', err);
+                alertBox.style.display = 'block';
+                alertBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.1)';
+                alertMsg.style.color = 'var(--danger)';
+                alertMsg.textContent = err.message || 'Server error. Please try again.';
+                
+                // Re-enable button
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.querySelector('span').textContent = 'Create Partner Account';
+            }
+        }
+
+        // Run fetch on load
+        window.addEventListener('DOMContentLoaded', fetchRestaurants);
+    </script>
+</body>
+</html>

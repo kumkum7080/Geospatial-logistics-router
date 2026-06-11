@@ -1,0 +1,87 @@
+<!-- C:\Users\kumku\.gemini\antigravity\scratch\geospatial_routing_system\static\admin\login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Login | BiteFlow Admin</title>
+    <!-- Custom CSS Styles -->
+    <link rel="stylesheet" href="/static/admin/style.css?v=5">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card glass-panel">
+            <div class="brand-header">
+                <span class="brand-logo">BiteFlow Admin</span>
+                <p class="brand-subtitle">Hyperlocal Operations & Network Dispatch Control Center</p>
+            </div>
+
+            <!-- Alert Notification Banner -->
+            <div id="alert-box" style="display: none; padding: 12px; margin-bottom: 20px; border: 1px solid transparent; background: rgba(0,0,0,0.3); text-align: center;">
+                <p id="alert-message" style="font-size: 0.88rem; font-weight: 500;"></p>
+            </div>
+
+            <form id="admin-login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="admin-username">Admin Username</label>
+                    <input type="text" id="admin-username" class="form-input" placeholder="e.g. admin" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="admin-password">Security Password</label>
+                    <input type="password" id="admin-password" class="form-input" placeholder="••••••••" required />
+                </div>
+
+                <div class="form-group" style="margin-top: 28px;">
+                    <button type="submit" class="btn-primary" id="btn-login-submit">
+                        <span>Authenticate & Launch</span>
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin(e) {
+            e.preventDefault();
+            const alertBox = document.getElementById('alert-box');
+            const alertMsg = document.getElementById('alert-message');
+            const btn = document.getElementById('btn-login-submit');
+
+            const username = document.getElementById('admin-username').value.trim();
+            const password = document.getElementById('admin-password').value.trim();
+
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.querySelector('span').textContent = 'Authenticating...';
+
+            // Predefined static credentials for dashboard access
+            if (username === 'admin' && password === 'admin_secret') {
+                localStorage.setItem('admin_session', 'active');
+                
+                alertBox.style.display = 'block';
+                alertBox.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                alertBox.style.background = 'rgba(16, 185, 129, 0.1)';
+                alertMsg.style.color = 'var(--secondary)';
+                alertMsg.textContent = 'Authorization granted! Launching cockpit...';
+
+                setTimeout(() => {
+                    window.location.href = '/admin/dashboard';
+                }, 1000);
+            } else {
+                alertBox.style.display = 'block';
+                alertBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.1)';
+                alertMsg.style.color = 'var(--danger)';
+                alertMsg.textContent = 'Access Denied: Invalid administrator credentials.';
+                
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.querySelector('span').textContent = 'Authenticate & Launch';
+            }
+        }
+    </script>
+</body>
+</html>

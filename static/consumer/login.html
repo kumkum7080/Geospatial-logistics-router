@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Login - BangaloreBites</title>
+  <link rel="stylesheet" href="/static/consumer/style.css?v=15">
+</head>
+<body class="auth-page">
+
+  <!-- Dual-buffered looping slow-motion food background videos -->
+  <video id="bg-video-1" autoplay muted playsinline class="auth-video-bg active" referrerpolicy="no-referrer"></video>
+  <video id="bg-video-2" autoplay muted playsinline class="auth-video-bg" referrerpolicy="no-referrer"></video>
+
+  <div class="auth-card glass">
+    <div class="auth-header">
+      <a href="/bangalore" class="logo" style="justify-content: center; margin-bottom: 24px;">
+        <span>Bangalore</span>Bites
+      </a>
+      <h2 class="auth-title">Welcome back</h2>
+      <p class="auth-subtitle">Log in to your account</p>
+    </div>
+
+    <div id="error-box" class="auth-error"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="user_id" class="form-label">User ID</label>
+        <input type="text" id="user_id" class="form-input" placeholder="Enter your user ID" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+        Sign In
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-secondary);">
+      New to BangaloreBites? <a href="/register" class="btn-text" style="padding: 0; font-weight: 600;">Create an account</a>
+    </div>
+  </div>
+
+  <script>
+    // If user is already logged in, redirect straight to bangalore discovery
+    const session = localStorage.getItem('customer_session');
+    if (session) {
+      window.location.href = '/bangalore';
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userIdVal = document.getElementById('user_id').value.trim();
+      const passwordVal = document.getElementById('password').value;
+      const errorBox = document.getElementById('error-box');
+      errorBox.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_id: userIdVal, password: passwordVal })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'SUCCESS') {
+          // Set customer details in session
+          localStorage.setItem('customer_session', JSON.stringify({
+            customer_id: data.customer_id,
+            full_name: data.full_name,
+            phone_number: data.phone_number,
+            tier: data.tier
+          }));
+          window.location.href = '/bangalore';
+        } else {
+          errorBox.textContent = data.detail || 'Login failed. Please check your credentials.';
+          errorBox.style.display = 'block';
+        }
+      } catch (err) {
+        console.error(err);
+        errorBox.textContent = 'Server connection failed. Is the API online?';
+        errorBox.style.display = 'block';
+      }
+    });
+
+    // Seamless double-buffered crossfade video slideshow
+    const videoUrls = [
+      "/static/consumer/video1.mp4?t=" + Date.now(), // Steaming rice bowl rotating
+      "/static/consumer/video2.mp4?t=" + Date.now(), // Coffee pouring
+      "/static/consumer/video3.mp4?t=" + Date.now(), // Pastries scoop
+      "/static/consumer/video4.mp4?t=" + Date.now(), // Steak sizzling
+      "/static/consumer/video5.mp4?t=" + Date.now(), // Rice bowl rotating (alt)
+      "/static/consumer/video6.mp4?t=" + Date.now()  // Coffee lift alternate
+    ];
+    
+    let currentVideoIndex = 0;
+    const v1 = document.getElementById('bg-video-1');
+    const v2 = document.getElementById('bg-video-2');
+    
+    // Initialize first video
+    v1.src = videoUrls[0];
+    v1.load();
+    v1.play().catch(e => console.warn(e));
+
+    function transitionVideos() {
+      currentVideoIndex = (currentVideoIndex + 1) % videoUrls.length;
+      const nextUrl = videoUrls[currentVideoIndex];
+      
+      const activeVideo = v1.classList.contains('active') ? v1 : v2;
+      const nextVideo = activeVideo === v1 ? v2 : v1;
+      
+      // Load next video in background
+      nextVideo.src = nextUrl;
+      nextVideo.load();
+      
+      nextVideo.oncanplaythrough = () => {
+        nextVideo.play().then(() => {
+          activeVideo.classList.remove('active');
+          nextVideo.classList.add('active');
+        }).catch(e => console.warn(e));
+        
+        nextVideo.oncanplaythrough = null;
+      };
+    }
+    
+    // Rotate every 8 seconds
+    setInterval(transitionVideos, 8000);
+  </script>
+</body>
+</html>

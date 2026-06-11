@@ -1,0 +1,212 @@
+<!-- C:\Users\kumku\.gemini\antigravity\scratch\geospatial_routing_system\static\driver\login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Login | BiteFlow Delivery</title>
+    <!-- Custom CSS Styles -->
+    <link rel="stylesheet" href="/static/driver/style.css?v=5">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="driver-app-container">
+        <div class="login-screen">
+            <div class="brand-header">
+                <span class="brand-logo">BiteFlow Delivery</span>
+                <p class="brand-subtitle">Hyperlocal Logistics Fleet & Food Delivery Driver Partner Portal</p>
+            </div>
+
+            <div class="glass-panel" style="width: 100%; padding: 24px; border-radius: 16px;">
+                
+                <!-- Tab Header -->
+                <div style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <button type="button" class="tab-btn-mode active" onclick="switchMode('quick')" style="flex: 1; padding: 12px; background: transparent; border: none; border-bottom: 2px solid var(--primary); color: var(--text-main); font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Quick Profile Select
+                    </button>
+                    <button type="button" class="tab-btn-mode" onclick="switchMode('credentials')" style="flex: 1; padding: 12px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-family: inherit; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
+                        Credentials Login
+                    </button>
+                </div>
+
+                <!-- Error/Success Alert Box -->
+                <div id="alert-box" style="display: none; padding: 12px; margin-bottom: 20px; border: 1px solid transparent; background: rgba(0,0,0,0.3); text-align: center;">
+                    <p id="alert-message" style="font-size: 0.88rem; font-weight: 500;"></p>
+                </div>
+
+                <form id="driver-login-form" onsubmit="handleLogin(event)">
+                    
+                    <!-- Quick Select Section -->
+                    <div id="quick-select-section">
+                        <div class="form-group">
+                            <label class="form-label" for="driver-profile-select">Select Driver Profile</label>
+                            <select id="driver-profile-select" class="form-select" onchange="onDriverSelect(this)">
+                                <option value="" disabled selected>Select your profile...</option>
+                                <option value="RIDER-ALPHA" data-phone="+919876543210">Arjun Singh (RIDER-ALPHA - Motorbike)</option>
+                                <option value="RIDER-BETA" data-phone="+919876543211">Priya Sharma (RIDER-BETA - Scooter)</option>
+                                <option value="RIDER-GAMMA" data-phone="+919876543212">Amit Verma (RIDER-GAMMA - Bicycle)</option>
+                                <option value="RIDER-DELTA" data-phone="+919876543213">Rajesh Kumar (RIDER-DELTA - Motorbike)</option>
+                                <option value="RIDER-EPSILON" data-phone="+919876543214">Vikram Malhotra (RIDER-EPSILON - Motorbike)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Credentials Section -->
+                    <div id="credentials-section" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label" for="driver-id-input">Driver ID</label>
+                            <input type="text" id="driver-id-input" class="form-input" placeholder="e.g. RIDER-ALPHA" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="driver-phone-input">Phone Number</label>
+                            <input type="text" id="driver-phone-input" class="form-input" placeholder="e.g. +91 98765 43210" />
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 28px;">
+                        <button type="submit" class="btn-primary" id="btn-login-submit">
+                            <span>Launch Driver Console</span>
+                            <i class="fa-solid fa-motorcycle"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let loginMode = 'quick';
+
+        // Toggle Login Mode
+        function switchMode(mode) {
+            loginMode = mode;
+            const tabBtns = document.querySelectorAll('.tab-btn-mode');
+            const quickSelectSec = document.getElementById('quick-select-section');
+            const credentialsSec = document.getElementById('credentials-section');
+            const profileSelect = document.getElementById('driver-profile-select');
+            const driverIdInput = document.getElementById('driver-id-input');
+            const driverPhoneInput = document.getElementById('driver-phone-input');
+
+            if (mode === 'quick') {
+                tabBtns[0].classList.add('active');
+                tabBtns[0].style.borderBottomColor = 'var(--primary)';
+                tabBtns[0].style.color = 'var(--text-main)';
+                tabBtns[1].classList.remove('active');
+                tabBtns[1].style.borderBottomColor = 'transparent';
+                tabBtns[1].style.color = 'var(--text-muted)';
+                
+                quickSelectSec.style.display = 'block';
+                credentialsSec.style.display = 'none';
+                
+                profileSelect.required = true;
+                driverIdInput.required = false;
+                driverPhoneInput.required = false;
+            } else {
+                tabBtns[1].classList.add('active');
+                tabBtns[1].style.borderBottomColor = 'var(--primary)';
+                tabBtns[1].style.color = 'var(--text-main)';
+                tabBtns[0].classList.remove('active');
+                tabBtns[0].style.borderBottomColor = 'transparent';
+                tabBtns[0].style.color = 'var(--text-muted)';
+                
+                quickSelectSec.style.display = 'none';
+                credentialsSec.style.display = 'block';
+                
+                profileSelect.required = false;
+                driverIdInput.required = true;
+                driverPhoneInput.required = true;
+            }
+        }
+
+        function onDriverSelect(select) {
+            // Can be used for custom logic when profile is selected
+        }
+
+        // Handle Login Submission
+        async function handleLogin(e) {
+            e.preventDefault();
+            const alertBox = document.getElementById('alert-box');
+            const alertMsg = document.getElementById('alert-message');
+            const btn = document.getElementById('btn-login-submit');
+
+            let driverId = '';
+            let phoneNumber = '';
+
+            if (loginMode === 'quick') {
+                const select = document.getElementById('driver-profile-select');
+                if (!select.value) {
+                    showAlert('Please select a driver profile.', 'error');
+                    return;
+                }
+                driverId = select.value;
+                const selectedOpt = select.options[select.selectedIndex];
+                phoneNumber = selectedOpt.getAttribute('data-phone');
+            } else {
+                driverId = document.getElementById('driver-id-input').value.trim();
+                phoneNumber = document.getElementById('driver-phone-input').value.trim();
+            }
+
+            // Disable button during call
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.querySelector('span').textContent = 'Connecting Fleet...';
+
+            try {
+                const response = await fetch('/api/driver/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ driver_id: driverId, phone_number: phoneNumber })
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.detail || 'Login authentication failed');
+                }
+
+                // Save session details
+                localStorage.setItem('driver_id', result.driver_id);
+                localStorage.setItem('driver_name', result.full_name);
+                localStorage.setItem('driver_vehicle', result.vehicle_type);
+                localStorage.setItem('driver_rating', result.rating_avg);
+                localStorage.setItem('driver_is_available', result.is_available ? 'true' : 'false');
+
+                showAlert('Access Authorized! Synchronizing telemetry...', 'success');
+
+                setTimeout(() => {
+                    window.location.href = '/driver/dashboard';
+                }, 1000);
+
+            } catch (err) {
+                console.error(err);
+                showAlert(err.message || 'Incorrect Driver ID or Phone Number.', 'error');
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.querySelector('span').textContent = 'Launch Driver Console';
+            }
+        }
+
+        function showAlert(msg, type) {
+            const alertBox = document.getElementById('alert-box');
+            const alertMsg = document.getElementById('alert-message');
+
+            alertBox.style.display = 'block';
+            if (type === 'success') {
+                alertBox.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                alertBox.style.background = 'rgba(16, 185, 129, 0.1)';
+                alertMsg.style.color = 'var(--primary)';
+            } else {
+                alertBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.1)';
+                alertMsg.style.color = 'var(--danger)';
+            }
+            alertMsg.textContent = msg;
+        }
+
+        // Initialize default requirement on DOM load
+        window.addEventListener('DOMContentLoaded', () => {
+            switchMode('quick');
+        });
+    </script>
+</body>
+</html>

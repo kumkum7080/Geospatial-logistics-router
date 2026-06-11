@@ -1,0 +1,572 @@
+<!-- C:\Users\kumku\.gemini\antigravity\scratch\geospatial_routing_system\static\driver\dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Console | BiteFlow Delivery</title>
+    <!-- Custom CSS Styles -->
+    <link rel="stylesheet" href="/static/driver/style.css?v=5">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet Map API -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="driver-app-container">
+        
+        <!-- App Top Bar -->
+        <div class="app-bar">
+            <div class="driver-profile">
+                <div class="driver-avatar">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                </div>
+                <div class="driver-meta">
+                    <h4 id="profile-name">Rider Partner</h4>
+                    <span id="profile-vehicle"><i class="fa-solid fa-motorcycle" style="margin-right: 4px;"></i>Motorbike</span>
+                </div>
+            </div>
+            
+            <div class="switch-container">
+                <span class="duty-label offline" id="duty-status-text">OFFLINE</span>
+                <label class="switch">
+                    <input type="checkbox" id="duty-toggle" onchange="toggleDuty(this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="app-body">
+            <!-- Alert Notification Banner -->
+            <div id="alert-box" style="display: none;"></div>
+
+            <!-- IDLE / OFFLINE STATE PANEL -->
+            <div id="idle-panel" class="idle-card glass-panel">
+                <div class="pulse-radar" id="radar-icon">
+                    <i class="fa-solid fa-wifi"></i>
+                </div>
+                <h3 class="idle-title" id="idle-title-text">You are Offline</h3>
+                <p class="idle-desc" id="idle-desc-text">Switch your Duty Status to ONLINE to start receiving delivery task assignments near Bangalore center.</p>
+            </div>
+
+            <!-- ACTIVE DELIVERY TASK PANEL -->
+            <div id="task-panel" class="glass-panel task-card" style="display: none;">
+                <div class="task-header">
+                    <span class="task-id-badge" id="task-order-id">ORD-XXXXXX</span>
+                    <span class="task-status-badge assigned" id="task-status-text">Assigned</span>
+                </div>
+
+                <!-- Timeline Route Details -->
+                <div class="timeline">
+                    <!-- Step 1: Restaurant Pickup -->
+                    <div class="timeline-node active" id="node-pickup">
+                        <div class="node-dot"><i class="fa-solid fa-utensils"></i></div>
+                        <h4 class="node-title">🍳 Step 1: Pick Up Food</h4>
+                        <div class="node-details">
+                            <h5 id="rest-name">Central Kitchen</h5>
+                            <p id="rest-cuisines">North Indian, Fast Food</p>
+                            <p style="margin-top: 4px;"><i class="fa-solid fa-phone" style="margin-right: 6px; color: var(--primary);"></i><span id="rest-phone">+91 99999 88888</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Customer Delivery -->
+                    <div class="timeline-node" id="node-delivery">
+                        <div class="node-dot"><i class="fa-solid fa-house-chimney"></i></div>
+                        <h4 class="node-title">🏠 Step 2: Deliver to Customer</h4>
+                        <div class="node-details">
+                            <h5 id="cust-id">Customer: CUST-0001</h5>
+                            <p style="font-weight: 500; color: var(--text-main); margin-bottom: 4px;"><i class="fa-solid fa-location-dot" style="margin-right: 6px; color: var(--secondary);"></i>Address:</p>
+                            <p id="cust-address">Loading Address...</p>
+                            <p style="margin-top: 6px;"><i class="fa-solid fa-wallet" style="margin-right: 6px; color: var(--accent);"></i>Collect: <span id="payment-text" style="font-weight: 600; color: var(--accent);">₹340 (COD)</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Section -->
+                <div class="form-group" style="margin-top: 20px; margin-bottom: 14px;">
+                    <label class="form-label">Active Route Directions</label>
+                    <div class="map-wrapper">
+                        <div id="map"></div>
+                    </div>
+                </div>
+
+                <!-- GPS Telemetry Simulator Interface -->
+                <div class="simulator-panel form-group">
+                    <div class="sim-header">
+                        <span class="sim-title"><i class="fa-solid fa-satellite" style="animation: pulse 1s infinite alternate;"></i>Telemetry Simulator</span>
+                        <span id="sim-status" style="font-size: 0.72rem; font-weight: 500; color: var(--text-muted);">WS: Disconnected</span>
+                    </div>
+                    <div class="btn-group-row">
+                        <button class="btn-sim" id="btn-sim-pickup" onclick="startGpsSimulation('pickup')">
+                            <i class="fa-solid fa-route"></i>
+                            Drive to Store
+                        </button>
+                        <button class="btn-sim" id="btn-sim-delivery" onclick="startGpsSimulation('delivery')" disabled>
+                            <i class="fa-solid fa-truck-ramp-box"></i>
+                            Drive to Customer
+                        </button>
+                    </div>
+                    <div class="sim-log" id="sim-log-text">Ready for simulation...</div>
+                </div>
+
+                <!-- Step-by-Step Task Action Button -->
+                <div class="slider-action-container">
+                    <button class="btn-action-large pickup" id="btn-workflow-action" onclick="handleWorkflowAction()">
+                        <span>Confirm Store Arrival & Pickup</span>
+                        <i class="fa-solid fa-circle-check"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let driverId = '';
+        let driverName = '';
+        let activeOrder = null;
+        let isOnline = false;
+        let checkTaskInterval = null;
+
+        // Leaflet Map objects
+        let map = null;
+        let riderMarker = null;
+        let restMarker = null;
+        let custMarker = null;
+        let routePolyline = null;
+
+        // Telemetry WebSocket & Sim state
+        let telemetrySocket = null;
+        let simInterval = null;
+        let currentLat = 12.9716;
+        let currentLng = 77.5946;
+
+        // Icons for Map pins (Foodie style L.divIcon round badges)
+        const riderIcon = L.divIcon({
+            html: '<div style="background: #16A34A; border: 2px solid #fff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;"><i class="fa-solid fa-motorcycle"></i></div>',
+            className: 'custom-leaflet-icon',
+            iconSize: [22, 22]
+        });
+        const restIcon = L.divIcon({
+            html: '<div style="background: #EA580C; border: 2px solid #fff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;"><i class="fa-solid fa-utensils"></i></div>',
+            className: 'custom-leaflet-icon',
+            iconSize: [22, 22]
+        });
+        const custIcon = L.divIcon({
+            html: '<div style="background: #E23744; border: 2px solid #fff; width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 2px 8px rgba(226, 55, 68, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;"><i class="fa-solid fa-house"></i></div>',
+            className: 'custom-leaflet-icon',
+            iconSize: [20, 20]
+        });
+
+        // Initialize driver session details
+        window.addEventListener('DOMContentLoaded', () => {
+            driverId = localStorage.getItem('driver_id');
+            driverName = localStorage.getItem('driver_name');
+            const driverVehicle = localStorage.getItem('driver_vehicle');
+            const driverRating = localStorage.getItem('driver_rating');
+            
+            if (!driverId) {
+                window.location.href = '/driver';
+                return;
+            }
+
+            document.getElementById('profile-name').textContent = driverName || 'Driver Partner';
+            document.getElementById('profile-vehicle').innerHTML = `<i class="fa-solid fa-motorcycle" style="margin-right: 4px;"></i>${driverVehicle || 'Motorbike'} (${driverRating || '5.0'}★)`;
+
+            // Read availability from database
+            const savedAvailability = localStorage.getItem('driver_is_available');
+            const toggle = document.getElementById('duty-toggle');
+            if (savedAvailability === 'true') {
+                toggle.checked = true;
+                toggleDuty(toggle);
+            } else {
+                toggle.checked = false;
+                toggleDuty(toggle);
+            }
+        });
+
+        // Toggle Duty status
+        async function toggleDuty(checkbox) {
+            isOnline = checkbox.checked;
+            const statusText = document.getElementById('duty-status-text');
+            const idleRadar = document.getElementById('radar-icon');
+            const idleTitle = document.getElementById('idle-title-text');
+            const idleDesc = document.getElementById('idle-desc-text');
+
+            localStorage.setItem('driver_is_available', isOnline ? 'true' : 'false');
+
+            if (isOnline) {
+                statusText.textContent = "ONLINE";
+                statusText.className = "duty-label online";
+                idleRadar.className = "pulse-radar";
+                idleRadar.innerHTML = '<i class="fa-solid fa-satellite-dish" style="animation: pulse 1s infinite alternate;"></i>';
+                idleTitle.textContent = "Awaiting Assignments";
+                idleDesc.textContent = "Your location telemetry is active. The central dispatch engine will assign orders located near you.";
+                
+                // Set availability on server
+                await setAvailabilityOnServer(true);
+
+                // Start polling for active tasks
+                checkActiveTask();
+                checkTaskInterval = setInterval(checkActiveTask, 4000);
+                
+                // Open telemetry Websocket
+                connectTelemetryWebSocket();
+            } else {
+                statusText.textContent = "OFFLINE";
+                statusText.className = "duty-label offline";
+                idleRadar.className = "pulse-radar";
+                idleRadar.innerHTML = '<i class="fa-solid fa-wifi"></i>';
+                idleTitle.textContent = "You are Offline";
+                idleDesc.textContent = "Switch your Duty Status to ONLINE to start receiving delivery task assignments near Bangalore center.";
+
+                // Set availability offline
+                await setAvailabilityOnServer(false);
+
+                // Stop polling
+                clearInterval(checkTaskInterval);
+                checkTaskInterval = null;
+                
+                // Hide task panels
+                document.getElementById('idle-panel').style.display = 'block';
+                document.getElementById('task-panel').style.display = 'none';
+
+                // Disconnect telemetry WebSocket
+                disconnectTelemetryWebSocket();
+                stopSimulation();
+            }
+        }
+
+        async function setAvailabilityOnServer(available) {
+            try {
+                await fetch(`/api/driver/${driverId}/availability`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_available: available })
+                });
+            } catch (err) {
+                console.error("Failed to update availability status on backend server:", err);
+            }
+        }
+
+        // Poll API for active tasks
+        async function checkActiveTask() {
+            if (!isOnline) return;
+
+            try {
+                const response = await fetch(`/api/driver/${driverId}/active-task`);
+                if (!response.ok) throw new Error("API retrieval failure");
+
+                const result = await response.json();
+                
+                if (result.status === "ACTIVE") {
+                    const orderData = result.order;
+                    // If it is a new task assigned
+                    if (!activeOrder || activeOrder.sub_order_id !== orderData.sub_order_id || activeOrder.order_status !== orderData.order_status) {
+                        activeOrder = orderData;
+                        renderActiveTask();
+                    }
+                } else {
+                    // Driver is IDLE
+                    activeOrder = null;
+                    document.getElementById('idle-panel').style.display = 'block';
+                    document.getElementById('task-panel').style.display = 'none';
+                    stopSimulation();
+                }
+            } catch (err) {
+                console.error("Failed checking for active driver dispatches:", err);
+            }
+        }
+
+        // Render Active task card details
+        function renderActiveTask() {
+            document.getElementById('idle-panel').style.display = 'none';
+            document.getElementById('task-panel').style.display = 'block';
+
+            document.getElementById('task-order-id').textContent = activeOrder.sub_order_id;
+            document.getElementById('rest-name').textContent = activeOrder.rest_name || "Merchant Kitchen";
+            document.getElementById('rest-cuisines').textContent = activeOrder.rest_cuisines || "Fast Food";
+            document.getElementById('rest-phone').textContent = activeOrder.rest_phone || "+91 99999 88888";
+            document.getElementById('cust-id').textContent = `Customer: ${activeOrder.customer_id}`;
+            document.getElementById('cust-address').textContent = activeOrder.delivery_address || "Coordinates match map";
+            document.getElementById('payment-text').textContent = `₹${Number(activeOrder.total_amount).toFixed(2)} (Paid Online)`;
+
+            const statusBadge = document.getElementById('task-status-text');
+            statusBadge.textContent = activeOrder.order_status.replace('_', ' ');
+            statusBadge.className = `task-status-badge ${activeOrder.order_status.toLowerCase()}`;
+
+            const nodePickup = document.getElementById('node-pickup');
+            const nodeDelivery = document.getElementById('node-delivery');
+            const btnWorkflow = document.getElementById('btn-workflow-action');
+            
+            const btnSimPickup = document.getElementById('btn-sim-pickup');
+            const btnSimDelivery = document.getElementById('btn-sim-delivery');
+
+            if (activeOrder.order_status === "ASSIGNED" || activeOrder.order_status === "PREPARING" || activeOrder.order_status === "READY_FOR_PICKUP") {
+                nodePickup.className = "timeline-node active";
+                nodeDelivery.className = "timeline-node";
+                
+                btnWorkflow.className = "btn-action-large pickup";
+                btnWorkflow.innerHTML = '<span>Confirm Store Arrival & Pickup</span><i class="fa-solid fa-circle-check"></i>';
+                btnWorkflow.style.display = 'flex';
+
+                btnSimPickup.disabled = false;
+                btnSimDelivery.disabled = true;
+            } else if (activeOrder.order_status === "PICKED_UP") {
+                nodePickup.className = "timeline-node";
+                nodeDelivery.className = "timeline-node active";
+                
+                btnWorkflow.className = "btn-action-large deliver";
+                btnWorkflow.innerHTML = '<span>Confirm Delivery & Handover</span><i class="fa-solid fa-house-circle-check"></i>';
+                btnWorkflow.style.display = 'flex';
+
+                btnSimPickup.disabled = true;
+                btnSimDelivery.disabled = false;
+            } else {
+                btnWorkflow.style.display = 'none';
+                btnSimPickup.disabled = true;
+                btnSimDelivery.disabled = true;
+            }
+
+            // Initialize/update Leaflet Map
+            initTaskMap();
+        }
+
+        // Initialize Leaflet Map and render pins
+        function initTaskMap() {
+            setTimeout(() => {
+                const riderLat = currentLat;
+                const riderLng = currentLng;
+                const restLat = activeOrder.rest_lat || 12.9716;
+                const restLng = activeOrder.rest_lng || 77.5946;
+                const custLat = activeOrder.cust_lat || 12.9716;
+                const custLng = activeOrder.cust_lng || 77.5946;
+
+                // Create map if it doesn't exist
+                if (!map) {
+                    map = L.map('map', { zoomControl: false }).setView([riderLat, riderLng], 14);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; CartoDB'
+                    }).addTo(map);
+                    L.control.zoom({ position: 'topright' }).addTo(map);
+                }
+
+                // Remove existing markers
+                if (riderMarker) map.removeLayer(riderMarker);
+                if (restMarker) map.removeLayer(restMarker);
+                if (custMarker) map.removeLayer(custMarker);
+                if (routePolyline) map.removeLayer(routePolyline);
+
+                // Place markers
+                riderMarker = L.marker([riderLat, riderLng], { icon: riderIcon }).addTo(map).bindPopup("<b>You (Rider)</b>");
+                restMarker = L.marker([restLat, restLng], { icon: restIcon }).addTo(map).bindPopup(`<b>Kitchen:</b> ${activeOrder.rest_name}`);
+                custMarker = L.marker([custLat, custLng], { icon: custIcon }).addTo(map).bindPopup("<b>Customer Dropoff</b>");
+
+                // Draw routing sequence: Rider -> Restaurant -> Customer
+                const pathCoordinates = [
+                    [riderLat, riderLng],
+                    [restLat, restLng],
+                    [custLat, custLng]
+                ];
+                routePolyline = L.polyline(pathCoordinates, {
+                    color: '#EA580C',
+                    weight: 4.5,
+                    opacity: 0.7,
+                    dashArray: '4, 6'
+                }).addTo(map);
+
+                // Fit map bounds to show all markers
+                const bounds = L.latLngBounds([ [riderLat, riderLng], [restLat, restLng], [custLat, custLng] ]);
+                map.fitBounds(bounds, { padding: [30, 30] });
+
+            }, 200);
+        }
+
+        // Handle Slide/Click confirmation actions
+        async function handleWorkflowAction() {
+            if (!activeOrder) return;
+
+            let nextStatus = '';
+            if (activeOrder.order_status === "ASSIGNED" || activeOrder.order_status === "PREPARING" || activeOrder.order_status === "READY_FOR_PICKUP") {
+                nextStatus = 'PICKED_UP';
+            } else if (activeOrder.order_status === "PICKED_UP") {
+                nextStatus = 'DELIVERED';
+            } else {
+                return;
+            }
+
+            const alertBox = document.getElementById('alert-box');
+            try {
+                const response = await fetch(`/api/driver/order/${activeOrder.sub_order_id}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: nextStatus })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || "Status transition failed");
+
+                showAlert(`Task status advanced to: ${nextStatus.replace('_', ' ')}`, 'success');
+                
+                // Instantly query new state
+                checkActiveTask();
+
+            } catch (err) {
+                console.error("Workflow Update Error:", err);
+                showAlert(err.message || "Failed to update order status.", "error");
+            }
+        }
+
+        // WebSocket Telemetry Connection
+        function connectTelemetryWebSocket() {
+            if (telemetrySocket) return;
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/rider/${driverId}`;
+            
+            console.log(`Connecting to Telemetry WebSocket: ${wsUrl}`);
+            telemetrySocket = new WebSocket(wsUrl);
+
+            telemetrySocket.onopen = () => {
+                document.getElementById('sim-status').textContent = "WS: Connected";
+                document.getElementById('sim-status').style.color = "var(--primary)";
+                writeSimLog("Telemetry GPS channel established.");
+            };
+
+            telemetrySocket.onclose = () => {
+                document.getElementById('sim-status').textContent = "WS: Disconnected";
+                document.getElementById('sim-status').style.color = "var(--text-muted)";
+                telemetrySocket = null;
+                writeSimLog("Telemetry GPS channel closed.");
+            };
+
+            telemetrySocket.onerror = (err) => {
+                console.error("WebSocket Telemetry Error:", err);
+                document.getElementById('sim-status').textContent = "WS: Error";
+                document.getElementById('sim-status').style.color = "var(--danger)";
+            };
+        }
+
+        function disconnectTelemetryWebSocket() {
+            if (telemetrySocket) {
+                telemetrySocket.close();
+                telemetrySocket = null;
+            }
+        }
+
+        // GPS Drive Path Simulation
+        function startGpsSimulation(destination) {
+            stopSimulation();
+
+            let targetLat = 12.9716;
+            let targetLng = 77.5946;
+
+            if (destination === 'pickup') {
+                targetLat = activeOrder.rest_lat;
+                targetLng = activeOrder.rest_lng;
+                writeSimLog("GPS: Started simulation to Restaurant...");
+            } else {
+                targetLat = activeOrder.cust_lat;
+                targetLng = activeOrder.cust_lng;
+                writeSimLog("GPS: Started simulation to Customer...");
+            }
+
+            const startLat = currentLat;
+            const startLng = currentLng;
+            const totalSteps = 12;
+            let currentStep = 0;
+
+            document.getElementById('btn-sim-pickup').disabled = true;
+            document.getElementById('btn-sim-delivery').disabled = true;
+
+            simInterval = setInterval(() => {
+                currentStep++;
+                
+                // Compute linear interpolation coordinates
+                const ratio = currentStep / totalSteps;
+                currentLat = startLat + (targetLat - startLat) * ratio;
+                currentLng = startLng + (targetLng - startLng) * ratio;
+
+                // Update marker on Map
+                if (riderMarker && map) {
+                    riderMarker.setLatLng([currentLat, currentLng]);
+                    
+                    // Draw dynamic route from current location
+                    const newPath = [
+                        [currentLat, currentLng],
+                        [targetLat, targetLng]
+                    ];
+                    routePolyline.setLatLngs(newPath);
+                    routePolyline.setStyle({ color: '#EA580C', dashArray: 'none' }); // Orange color for active driving route
+                }
+
+                // Send coordinates over WebSocket
+                sendTelemetryCoordinates(currentLat, currentLng);
+
+                writeSimLog(`GPS Ping ${currentStep}/${totalSteps}: (${currentLat.toFixed(5)}, ${currentLng.toFixed(5)})`);
+
+                if (currentStep >= totalSteps) {
+                    stopSimulation();
+                    writeSimLog(`GPS: Arrived at ${destination === 'pickup' ? 'Restaurant!' : 'Customer Dropoff!'}`);
+                    showAlert(`GPS tracking indicates arrival at ${destination === 'pickup' ? 'Store!' : 'Customer location!'}`, 'success');
+                    
+                    // Enable correct button
+                    if (destination === 'pickup') {
+                        document.getElementById('btn-sim-pickup').disabled = true;
+                        document.getElementById('btn-sim-delivery').disabled = false;
+                    } else {
+                        document.getElementById('btn-sim-pickup').disabled = false;
+                        document.getElementById('btn-sim-delivery').disabled = true;
+                    }
+                }
+            }, 1500);
+        }
+
+        function sendTelemetryCoordinates(lat, lng) {
+            if (telemetrySocket && telemetrySocket.readyState === WebSocket.OPEN) {
+                const payload = {
+                    latitude: lat,
+                    longitude: lng
+                };
+                telemetrySocket.send(JSON.stringify(payload));
+            } else {
+                // If WS disconnected, try to reconnect
+                connectTelemetryWebSocket();
+            }
+        }
+
+        function stopSimulation() {
+            if (simInterval) {
+                clearInterval(simInterval);
+                simInterval = null;
+            }
+            // Re-render task UI to restore buttons states
+            if (activeOrder) {
+                document.getElementById('btn-sim-pickup').disabled = (activeOrder.order_status === "PICKED_UP");
+                document.getElementById('btn-sim-delivery').disabled = (activeOrder.order_status !== "PICKED_UP");
+            }
+        }
+
+        function writeSimLog(text) {
+            const logBox = document.getElementById('sim-log-text');
+            logBox.textContent = text;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function showAlert(msg, type) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.style.display = 'block';
+            alertBox.className = type === 'success' ? 'glass-panel' : 'glass-panel';
+            alertBox.style.borderColor = type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)';
+            alertBox.style.background = type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+            alertBox.style.color = type === 'success' ? 'var(--primary)' : 'var(--danger)';
+            alertBox.innerHTML = `<p style="font-size: 0.88rem; font-weight: 600;"><i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}" style="margin-right: 8px;"></i>${msg}</p>`;
+            
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

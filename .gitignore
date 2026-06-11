@@ -1,0 +1,36 @@
+# Environments
+venv/
+.venv/
+env/
+.env
+.env.*
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Temporary/Output Files
+*output.txt
+test_out.txt
+py_output.txt
+where_output.txt
+check_csv_out.txt
+debug_out.txt
+mock_otps.json
+
+# IDE settings
+.vscode/
+.idea/
+
+# Large Datasets / Archives
+archive (2)/
+get-pip.py
+
+# Media Assets
+*.mp4
+
+# User Uploads
+static/uploads/*
+!static/uploads/.gitkeep

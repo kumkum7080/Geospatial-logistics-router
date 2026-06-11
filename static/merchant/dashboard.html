@@ -1,0 +1,1282 @@
+<!-- C:\Users\kumku\.gemini\antigravity\scratch\geospatial_routing_system\static\merchant\dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merchant Dashboard | Geospatial Hyperlocal Routing System</title>
+    <!-- Custom CSS Styles -->
+    <link rel="stylesheet" href="/static/merchant/style.css?v=5">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet Map library CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <div class="navbar-brand">
+                <i class="fa-solid fa-mortar-pestle" style="font-size: 1.6rem; color: var(--primary);"></i>
+                <span class="logo-text">BiteFlow Kitchens</span>
+                <span class="badge-merchant">Partner Portal</span>
+            </div>
+            
+            <div class="merchant-info">
+                <div class="sound-indicator active" id="sound-btn" onclick="toggleSound()" title="Toggle Order Sound Alerts">
+                    <i class="fa-solid fa-volume-high"></i>
+                </div>
+                <div class="merchant-details">
+                    <div class="merchant-name" id="nav-merchant-name">Kitchen Loading...</div>
+                    <div class="merchant-id-tag" id="nav-merchant-id">RESTAURANT-ID</div>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()">
+                    <i class="fa-solid fa-sign-out-alt"></i>
+                    <span>Log Out</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar + Content Body -->
+        <div class="dashboard-body">
+            <!-- Sidebar -->
+            <nav class="sidebar">
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab('live-orders')">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Live Orders</span>
+                        <span class="order-count-badge" id="sidebar-order-count">0</span>
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('menu-management')">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>Menu Catalog</span>
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('analytics-performance')">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Performance</span>
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('live-dispatch-map')">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span>Live Dispatch Map</span>
+                    </button>
+                </div>
+                
+                <div class="sidebar-footer">
+                    <p>© 2026 Hyperlocal Engine</p>
+                    <p style="font-size: 0.7rem; margin-top: 4px; opacity: 0.6;">v1.2.0 (Geospatial Grid)</p>
+                </div>
+            </nav>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <!-- 1. LIVE ORDERS TAB -->
+                <section id="live-orders" class="tab-content active">
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card glass-panel blue">
+                            <div class="stat-details">
+                                <h4>Today's Earnings</h4>
+                                <div class="stat-val" id="stat-revenue">Rs. 0.00</div>
+                            </div>
+                            <div class="stat-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                        </div>
+                        <div class="stat-card glass-panel emerald">
+                            <div class="stat-details">
+                                <h4>Active Deliveries</h4>
+                                <div class="stat-val" id="stat-active-orders">0</div>
+                            </div>
+                            <div class="stat-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                        </div>
+                        <div class="stat-card glass-panel amber">
+                            <div class="stat-details">
+                                <h4>Avg Cooking Time</h4>
+                                <div class="stat-val">12 mins</div>
+                            </div>
+                            <div class="stat-icon"><i class="fa-solid fa-fire"></i></div>
+                        </div>
+                        <div class="stat-card glass-panel purple">
+                            <div class="stat-details">
+                                <h4>Partner Rating</h4>
+                                <div class="stat-val" id="stat-rating">4.2 ★</div>
+                            </div>
+                            <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Layout -->
+                    <div class="panel-grid">
+                        <!-- Left Panel: Live Incoming Orders -->
+                        <div class="glass-panel" style="overflow: hidden;">
+                            <div class="panel-header">
+                                <h2><i class="fa-solid fa-bell"></i> Active Delivery Orders</h2>
+                                <button class="btn-add-item" onclick="triggerDispatchOptimization()" style="background: var(--accent); padding: 6px 14px; font-size: 0.82rem;" title="Runs matching dispatch engine to assign fleet riders immediately">
+                                    <i class="fa-solid fa-bolt"></i> Auto-Assign Riders
+                                </button>
+                            </div>
+                            
+                            <div class="orders-list" id="orders-container">
+                                <!-- Order Cards injected dynamically -->
+                                <div class="no-orders">
+                                    <i class="fa-solid fa-receipt"></i>
+                                    <p>No active incoming orders. Waiting for checkout events...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Selected Order Live Telemetry Focus -->
+                        <div class="glass-panel order-focus-card" id="focus-panel" style="display: none;">
+                            <div class="focus-header">
+                                <span class="focus-title" id="focus-order-id">ORD-XXXX</span>
+                                <span class="badge-status placed" id="focus-order-status">PLACED</span>
+                            </div>
+                            
+                            <div class="focus-section">
+                                <h4>Customer Contact</h4>
+                                <p style="font-weight: 500; font-size: 0.92rem;" id="focus-cust-id">CUST-102</p>
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;" id="focus-cust-address">No 45, Residency Road, Bangalore</p>
+                            </div>
+
+                            <div class="focus-section">
+                                <h4>Fulfillment Summary</h4>
+                                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+                                    <p style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-muted);">Total Billable:</span>
+                                        <strong style="color: var(--accent);" id="focus-total">Rs. 0.00</strong>
+                                    </p>
+                                    <p style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-muted);">SLA Allocation:</span>
+                                        <strong id="focus-sla">45 Minutes</strong>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="focus-section">
+                                <h4>Rider Dispatch Telemetry</h4>
+                                <div id="focus-rider-details">
+                                    <div class="rider-card">
+                                        <div class="rider-avatar"><i class="fa-solid fa-motorcycle"></i></div>
+                                        <div class="rider-info">
+                                            <h5 id="focus-rider-name">Rider Unassigned</h5>
+                                            <p id="focus-rider-id">DRIVER-PENDING</p>
+                                        </div>
+                                    </div>
+                                    <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 10px;" id="focus-rider-status">Waiting for dispatch scheduler to assign a delivery partner...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. MENU CATALOG TAB -->
+                <section id="menu-management" class="tab-content">
+                    <div class="glass-panel" style="padding: 24px; min-height: 500px;">
+                        
+                        <!-- Restaurant Cover Photo Banner -->
+                        <div class="restaurant-cover-banner glass-panel" style="position: relative; height: 180px; border-radius: 12px; margin-bottom: 24px; overflow: hidden; background-size: cover; background-position: center; display: flex; align-items: flex-end; padding: 24px; border: 1px solid var(--border-color);" id="dashboard-cover-banner">
+                            <div style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%); z-index: 1;"></div>
+                            <div style="position: relative; z-index: 2; display: flex; width: 100%; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;">
+                                <div>
+                                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: #FFFFFF; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" id="cover-rest-name">Restaurant Name</h3>
+                                    <p style="font-size: 0.85rem; color: rgba(255,255,255,0.9); margin-top: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);" id="cover-rest-cuisines">Cuisines Listing</p>
+                                </div>
+                                <button class="btn btn-primary" onclick="openCoverPhotoModal()" style="padding: 8px 16px; font-size: 0.8rem; background: var(--accent); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-camera"></i> Change Cover Banner
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="menu-controls">
+                            <h2 style="font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-utensils" style="color: var(--primary);"></i> Menu Catalog Management
+                            </h2>
+                            <div style="display: flex; gap: 12px;">
+                                <input type="text" id="menu-search" class="form-input" placeholder="Search dishes..." onkeyup="filterMenu(this)" style="width: 240px; padding: 10px 14px;">
+                                <button class="btn-add-item" onclick="openAddDishModal()">
+                                    <i class="fa-solid fa-plus"></i> Add New Dish
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Menu Catalog Grid -->
+                        <div class="menu-grid" id="menu-container">
+                            <!-- Menu Cards injected dynamically -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. ANALYTICS & PERFORMANCE TAB -->
+                <section id="analytics-performance" class="tab-content">
+                    <div class="analytics-grid">
+                        <!-- Left Panel: Chart Visual -->
+                        <div class="glass-panel chart-card">
+                            <div class="chart-title">
+                                <i class="fa-solid fa-chart-column"></i> Revenue Breakdown by Cuisine Category
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="revenue-chart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Popular Items list -->
+                        <div class="glass-panel" style="padding: 24px;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-award" style="color: var(--secondary);"></i> Top Selling Dishes
+                            </h3>
+                            <ul class="popular-items-list" id="popular-items-container">
+                                <!-- Injected dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- SLA Performance Panel -->
+                    <div class="glass-panel" style="padding: 24px;">
+                        <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 20px;"><i class="fa-solid fa-gauge-high" style="color: var(--accent); margin-right: 8px;"></i> Hyperlocal Service SLA Completion</h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center;">
+                            <div style="padding: 16px; background: #FCFBFA; border: 1px solid var(--border-color); border-radius: 12px;">
+                                <h5 style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 6px;">On-Time Delivery Rate</h5>
+                                <strong style="font-size: 1.8rem; color: var(--accent);">97.4%</strong>
+                            </div>
+                            <div style="padding: 16px; background: #FCFBFA; border: 1px solid var(--border-color); border-radius: 12px;">
+                                <h5 style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 6px;">Avg Prep Duration</h5>
+                                <strong style="font-size: 1.8rem; color: var(--primary);">8.2 mins</strong>
+                            </div>
+                            <div style="padding: 16px; background: #FCFBFA; border: 1px solid var(--border-color); border-radius: 12px;">
+                                <h5 style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 6px;">Rider Wait Time</h5>
+                                <strong style="font-size: 1.8rem; color: var(--secondary);">1.9 mins</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. LIVE DISPATCH MAP TAB -->
+                <section id="live-dispatch-map" class="tab-content">
+                    <div class="map-layout">
+                        <!-- Left Panel: Map Container -->
+                        <div class="map-container">
+                            <div id="dispatch-map"></div>
+                        </div>
+
+                        <!-- Right Panel: Rider Telemetry List -->
+                        <div class="map-sidebar">
+                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fa-solid fa-helmet-safety" style="color: var(--primary); margin-right: 8px;"></i> Delivery Fleet Status</h3>
+                            <ul class="rider-status-list" id="rider-status-container">
+                                <!-- Injected dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL: Add Menu Dish -->
+    <div class="modal" id="add-dish-modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <span class="modal-title">Add New Menu Dish</span>
+                <button class="btn-close-modal" onclick="closeAddDishModal()">&times;</button>
+            </div>
+            <form id="add-dish-form" onsubmit="submitAddDish(event)">
+                <div class="form-group">
+                    <label class="form-label" for="dish-name">Dish Name</label>
+                    <input type="text" id="dish-name" class="form-input" required placeholder="e.g. Garlic Naan with Gravy">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="dish-price">Price (Rs.)</label>
+                    <input type="number" id="dish-price" class="form-input" required min="1" step="0.01" placeholder="e.g. 180.00">
+                </div>
+                <div style="margin-top: 24px;">
+                    <button type="submit" class="btn-primary">
+                        <i class="fa-solid fa-plus"></i> Save Dish to Catalog
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Change Cover Photo -->
+    <div class="modal" id="cover-photo-modal" style="display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: 1000;">
+        <div class="modal-content glass-panel" style="width: 100%; max-width: 540px; padding: 28px; background: rgba(22, 23, 29, 0.95); border: 1px solid var(--border-color); border-radius: 16px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+                <span class="modal-title" style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-camera" style="color: var(--accent);"></i> Change Cover Banner</span>
+                <button class="btn-close-modal" onclick="closeCoverPhotoModal()" style="background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+            <form onsubmit="submitCoverPhoto(event)" style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Upload Cover Photo File</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="file" id="cover-file-input" accept="image/*" class="form-input" style="padding: 6px 12px; font-size: 0.88rem; flex-grow: 1;">
+                        <button type="button" class="btn" onclick="uploadPhoto('cover')" style="background: var(--primary); padding: 8px 16px; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="cover-photo-url">Custom Image URL</label>
+                    <input type="url" id="cover-photo-url" class="form-input" placeholder="https://images.unsplash.com/photo-..." required style="width: 100%; padding: 10px 14px;">
+                </div>
+                
+                <div>
+                    <label class="form-label" style="margin-bottom: 8px;">Or Select from Premium Presets</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;" id="presets-grid">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCoverPhotoModal()" style="padding: 10px 20px;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 10px 24px; background: var(--accent); border: none; width: auto; font-size: 0.9rem; margin-top: 0;">Save Cover Banner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Change Dish Photo -->
+    <div class="modal" id="dish-photo-modal" style="display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: 1000;">
+        <div class="modal-content glass-panel" style="width: 100%; max-width: 500px; padding: 28px; background: rgba(22, 23, 29, 0.95); border: 1px solid var(--border-color); border-radius: 16px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+                <span class="modal-title" style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-image" style="color: var(--primary);"></i> Change Dish Photo</span>
+                <button class="btn-close-modal" onclick="closeDishPhotoModal()" style="background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+            <h4 id="dish-modal-title" style="font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); margin-top: 12px; margin-bottom: 4px;">Dish Name</h4>
+            <form onsubmit="submitDishPhoto(event)" style="display: flex; flex-direction: column; gap: 16px; margin-top: 12px;">
+                <div class="form-group">
+                    <label class="form-label">Upload Dish Photo File</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="file" id="dish-file-input" accept="image/*" class="form-input" style="padding: 6px 12px; font-size: 0.88rem; flex-grow: 1;">
+                        <button type="button" class="btn" onclick="uploadPhoto('dish')" style="background: var(--primary); padding: 8px 16px; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="dish-photo-url">Custom Image URL</label>
+                    <input type="url" id="dish-photo-url" class="form-input" placeholder="https://images.unsplash.com/photo-..." required style="width: 100%; padding: 10px 14px;">
+                </div>
+                
+                <div>
+                    <label class="form-label" style="margin-bottom: 8px;">Or Select from Premium Presets</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;" id="dish-presets-grid">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeDishPhotoModal()" style="padding: 10px 20px;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 10px 24px; border: none; width: auto; font-size: 0.9rem; margin-top: 0;">Save Photo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Core State
+        const merchantId = localStorage.getItem('merchant_id');
+        const merchantName = localStorage.getItem('merchant_name');
+        const merchantLat = parseFloat(localStorage.getItem('merchant_lat') || '12.9716');
+        const merchantLng = parseFloat(localStorage.getItem('merchant_lng') || '77.5946');
+        
+        let activeOrders = [];
+        let menuItems = [];
+        let previousOrdersIds = new Set();
+        let soundEnabled = true;
+        let mapInstance = null;
+        let mapMarkers = [];
+        let mapPolylines = [];
+        let analyticsChart = null;
+
+        // Custom Photo Selector State
+        let focusedDishItemId = null;
+        let currentCoverBannerUrl = null;
+        
+        const coverPresets = [
+            { name: "Biryani & Rice", url: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=1200&auto=format&fit=crop&q=80" },
+            { name: "South Indian Dosa", url: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=1200&auto=format&fit=crop&q=80" },
+            { name: "Gourmet Pizza", url: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&auto=format&fit=crop&q=80" },
+            { name: "Cafe & Breakfast", url: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1200&auto=format&fit=crop&q=80" },
+            { name: "Premium Burger", url: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200&auto=format&fit=crop&q=80" },
+            { name: "Chinese Noodles", url: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=1200&auto=format&fit=crop&q=80" }
+        ];
+
+        const dishPresets = [
+            { name: "Indian Paneer", url: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&auto=format&fit=crop&q=80" },
+            { name: "Tandoori Chicken", url: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=400&auto=format&fit=crop&q=80" },
+            { name: "Indian Flatbread", url: "https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=400&auto=format&fit=crop&q=80" },
+            { name: "Golden Samosas", url: "https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=400&auto=format&fit=crop&q=80" },
+            { name: "Idli & Vada Combo", url: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400&auto=format&fit=crop&q=80" },
+            { name: "Italian Pasta", url: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&auto=format&fit=crop&q=80" }
+        ];
+
+        const fallbackImages = [
+          "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=500&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=500&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=500&auto=format&fit=crop&q=80"
+        ];
+
+        function getFallbackImage(id) {
+          if (!id) id = String(Math.random());
+          id = String(id);
+          let hash = 0;
+          for (let i = 0; i < id.length; i++) {
+            hash = id.charCodeAt(i) + ((hash << 5) - hash);
+          }
+          const index = Math.abs(hash) % fallbackImages.length;
+          return fallbackImages[index];
+        }
+
+        function getRestaurantImage(cuisines, id) {
+          if (!id) id = String(Math.random());
+          id = String(id);
+          let keyword = "food,dish";
+          const lowerCuisines = String(cuisines || "").toLowerCase();
+          if (lowerCuisines.includes("biryani") || lowerCuisines.includes("rice")) keyword = "biryani,rice";
+          else if (lowerCuisines.includes("dosa") || lowerCuisines.includes("south indian") || lowerCuisines.includes("idli")) keyword = "dosa,idli";
+          else if (lowerCuisines.includes("pizza")) keyword = "pizza";
+          else if (lowerCuisines.includes("burger")) keyword = "burger";
+          else if (lowerCuisines.includes("dessert") || lowerCuisines.includes("cake")) keyword = "dessert,cake";
+          else if (lowerCuisines.includes("coffee") || lowerCuisines.includes("beverage")) keyword = "coffee,drink";
+          else if (lowerCuisines.includes("noodle") || lowerCuisines.includes("chinese")) keyword = "noodles,pasta";
+          else if (lowerCuisines.includes("north indian") || lowerCuisines.includes("paneer") || lowerCuisines.includes("kebab")) keyword = "kebab,curry";
+          else if (lowerCuisines.includes("salad") || lowerCuisines.includes("healthy")) keyword = "salad,healthy";
+          let hash = 0;
+          for (let i = 0; i < id.length; i++) {
+            hash = id.charCodeAt(i) + ((hash << 5) - hash);
+          }
+          const seed = Math.abs(hash) % 1000;
+          return `https://loremflickr.com/1000/600/${keyword}?lock=${seed}`;
+        }
+
+        function getDishImage(dishName, id) {
+          if (!dishName) dishName = "";
+          if (!id) id = String(Math.random());
+          dishName = String(dishName);
+          id = String(id);
+          const lower = dishName.toLowerCase();
+          if (lower.includes('dosa')) return "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('biryani') || lower.includes('rice')) return "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('paneer')) return "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('chicken') || lower.includes('kebab')) return "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('roti') || lower.includes('paratha')) return "https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('samosa') || lower.includes('snack')) return "https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('idli') || lower.includes('vada')) return "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('coffee') || lower.includes('tea')) return "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('burger')) return "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('pizza')) return "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('dessert') || lower.includes('cake')) return "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=400&auto=format&fit=crop&q=80";
+          if (lower.includes('pasta') || lower.includes('noodles')) return "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&auto=format&fit=crop&q=80";
+          const defaults = [
+            "https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80"
+          ];
+          let hash = 0;
+          for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+          return defaults[Math.abs(hash) % defaults.length];
+        }
+
+        // Redirect if not authenticated
+        if (!merchantId) {
+            window.location.href = '/merchant';
+        }
+
+        // Initialize display info
+        document.getElementById('nav-merchant-name').textContent = merchantName;
+        document.getElementById('nav-merchant-id').textContent = merchantId;
+        document.getElementById('stat-rating').textContent = `${Number(localStorage.getItem('merchant_rating') || '4.0').toFixed(1)} ★`;
+
+        // Switch Tab navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Activate button
+            const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            if (targetBtn) targetBtn.classList.add('active');
+            
+            // Activate tab panel
+            document.getElementById(tabId).classList.add('active');
+
+            // Handle Leaflet Map recalculation on tab reveal
+            if (tabId === 'live-dispatch-map') {
+                setTimeout(initDispatchMap, 100);
+            }
+        }
+
+        // Toggle sound alert
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-btn');
+            if (soundEnabled) {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+            }
+        }
+
+        // Synthetic dual-tone chime beep
+        function playNewOrderSound() {
+            if (!soundEnabled) return;
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15); // E5
+                
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+                osc2.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.15); // G5
+                
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.05);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.35);
+                
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc1.start();
+                osc2.start();
+                osc1.stop(audioCtx.currentTime + 0.4);
+                osc2.stop(audioCtx.currentTime + 0.4);
+            } catch (e) {
+                console.error('AudioContext sound failed:', e);
+            }
+        }
+
+        // Fetch dashboard statistics, orders, and menu catalog
+        async function fetchDashboardData() {
+            try {
+                const response = await fetch(`/api/merchant/${merchantId}/dashboard`);
+                if (!response.ok) throw new Error('API server failed');
+                
+                const data = await response.json();
+                
+                // Update stats counts
+                document.getElementById('stat-revenue').textContent = `Rs. ${Number(data.stats.total_revenue).toFixed(2)}`;
+                document.getElementById('stat-active-orders').textContent = data.stats.active_orders_count;
+                document.getElementById('sidebar-order-count').textContent = data.stats.active_orders_count;
+                
+                activeOrders = data.active_orders;
+                menuItems = data.menu_items;
+
+                // Render Cover Photo Banner
+                currentCoverBannerUrl = data.image_url || getRestaurantImage(data.cuisine_types, merchantId);
+                const bannerEl = document.getElementById('dashboard-cover-banner');
+                if (bannerEl) {
+                    bannerEl.style.backgroundImage = `url('${currentCoverBannerUrl}')`;
+                    document.getElementById('cover-rest-name').textContent = merchantName;
+                    document.getElementById('cover-rest-cuisines').textContent = data.cuisine_types || "Premium Kitchen Partner";
+                }
+
+                // Render dynamic panels
+                renderActiveOrders();
+                renderMenuCatalog();
+                renderTopDishes(data.stats.top_selling_dishes);
+                updateCharts(data.analytics.cuisine_revenue);
+                
+                // Trigger sound if a new order is detected
+                let isNewOrderFound = false;
+                activeOrders.forEach(o => {
+                    if (!previousOrdersIds.has(o.order_id)) {
+                        previousOrdersIds.add(o.order_id);
+                        isNewOrderFound = true;
+                    }
+                });
+                
+                if (isNewOrderFound && previousOrdersIds.size > activeOrders.length) {
+                    playNewOrderSound();
+                }
+                
+                // Keep the focused panel synchronized
+                syncFocusPanel();
+
+                // If map is active, refresh pins
+                if (document.getElementById('live-dispatch-map').classList.contains('active')) {
+                    updateMapPins();
+                }
+            } catch (err) {
+                console.error('Error fetching dashboard data:', err);
+            }
+        }
+
+        // Render Active orders table/list
+        function renderActiveOrders() {
+            const container = document.getElementById('orders-container');
+            
+            if (activeOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="no-orders">
+                        <i class="fa-solid fa-receipt"></i>
+                        <p>No active incoming orders. Waiting for checkout events...</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            activeOrders.forEach(order => {
+                const itemsHtml = order.items.map(item => `
+                    <li>
+                        <span><span class="qty">${item.quantity}x</span> ${item.item_name}</span>
+                        <span>Rs. ${Number(item.total_price).toFixed(2)}</span>
+                    </li>
+                `).join('');
+                
+                // Determine buttons based on status
+                let actionButtons = '';
+                if (order.status === 'PLACED') {
+                    actionButtons = `
+                        <button class="btn-action btn-accept" onclick="updateOrderStatus('${order.order_id}', 'PREPARING')">
+                            <i class="fa-solid fa-circle-check"></i> Accept & Prepare
+                        </button>
+                    `;
+                } else if (order.status === 'PREPARING') {
+                    actionButtons = `
+                        <button class="btn-action btn-ready" onclick="updateOrderStatus('${order.order_id}', 'READY_FOR_PICKUP')">
+                            <i class="fa-solid fa-box-open"></i> Ready for Pickup
+                        </button>
+                    `;
+                } else {
+                    actionButtons = `
+                        <span style="font-size: 0.82rem; color: var(--text-muted); padding: 8px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Driver in Transit
+                        </span>
+                    `;
+                }
+
+                html += `
+                    <div class="order-card" onclick="focusOrder('${order.order_id}')">
+                        <div class="order-card-header">
+                            <div class="order-id-block">
+                                <h3>${order.order_id}</h3>
+                                <div class="order-time">Received ${order.created_time}</div>
+                            </div>
+                            <span class="badge-status ${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span>
+                        </div>
+                        
+                        <div class="order-details-block">
+                            <div class="order-items-summary">Items Catalog:</div>
+                            <ul class="order-items-list">
+                                ${itemsHtml}
+                            </ul>
+                        </div>
+                        
+                        <div class="delivery-details">
+                            <p><i class="fa-solid fa-location-dot"></i> <span>${order.delivery_address || 'Not provided'}</span></p>
+                        </div>
+                        
+                        <div class="order-card-footer" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                            <div class="order-total">Rs. ${Number(order.total_amount).toFixed(2)}</div>
+                            <div class="order-actions" onclick="event.stopPropagation()">
+                                ${actionButtons}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Render Menu Catalog
+        function renderMenuCatalog() {
+            const container = document.getElementById('menu-container');
+            
+            if (menuItems.length === 0) {
+                container.innerHTML = `<div class="no-orders" style="grid-column: 1/-1;"><p>No menu dishes in catalog. Click Add to create one!</p></div>`;
+                return;
+            }
+            
+            let html = '';
+            menuItems.forEach(item => {
+                const dishImage = item.image_url || getDishImage(item.item_name, item.menu_item_id);
+                html += `
+                    <div class="menu-card glass-panel" data-name="${item.item_name.toLowerCase()}" style="display: flex; flex-direction: column;">
+                        <div style="position: relative; height: 200px; border-radius: 12px; overflow: hidden; margin-bottom: 16px; background-image: url('${dishImage}'); background-size: cover; background-position: center; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.25); flex-shrink: 0;">
+                            <div style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.6) 100%); z-index: 1;"></div>
+                            <button onclick="openDishPhotoModal('${item.menu_item_id}')" style="position: absolute; bottom: 12px; right: 12px; background: rgba(45, 39, 33, 0.85); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; z-index: 2; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.4);" onmouseover="this.style.background='var(--primary)'; this.style.transform='scale(1.1)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(45, 39, 33, 0.85)'; this.style.transform='scale(1)'; this.style.borderColor='rgba(255,255,255,0.25)';" title="Change Item Photo">
+                                <i class="fa-solid fa-camera" style="font-size: 1.1rem;"></i>
+                            </button>
+                        </div>
+                        <div class="menu-card-top" style="flex-grow: 1;">
+                            <div>
+                                <h4 class="menu-item-name">${item.item_name}</h4>
+                                <div class="menu-item-price">Rs. ${Number(item.price).toFixed(2)}</div>
+                            </div>
+                            <button class="btn-delete-dish" onclick="deleteMenuDish('${item.menu_item_id}')" title="Delete Dish">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 8px;">
+                            <span>ID: ${item.menu_item_id}</span>
+                            <span style="color: var(--accent); font-weight: 500;">Active</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Render Top Selling Dishes
+        function renderTopDishes(dishes) {
+            const container = document.getElementById('popular-items-container');
+            if (!dishes || dishes.length === 0) {
+                container.innerHTML = '<li style="text-align: center; color: var(--text-muted); padding: 20px;">No sales logged yet.</li>';
+                return;
+            }
+            
+            let html = '';
+            dishes.forEach(d => {
+                html += `
+                    <li class="popular-item-row">
+                        <span class="popular-item-name">${d.name}</span>
+                        <span class="popular-item-sales">${d.quantity_sold} sold</span>
+                    </li>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Live Order Focus Details Panel
+        let currentFocusOrderId = null;
+
+        function focusOrder(orderId) {
+            currentFocusOrderId = orderId;
+            syncFocusPanel();
+        }
+
+        function syncFocusPanel() {
+            const panel = document.getElementById('focus-panel');
+            if (!currentFocusOrderId) {
+                panel.style.display = 'none';
+                return;
+            }
+            
+            const order = activeOrders.find(o => o.order_id === currentFocusOrderId);
+            if (!order) {
+                currentFocusOrderId = null;
+                panel.style.display = 'none';
+                return;
+            }
+            
+            panel.style.display = 'block';
+            document.getElementById('focus-order-id').textContent = order.order_id;
+            
+            const statusBadge = document.getElementById('focus-order-status');
+            statusBadge.className = `badge-status ${order.status.toLowerCase()}`;
+            statusBadge.textContent = order.status.replace('_', ' ');
+            
+            document.getElementById('focus-cust-id').textContent = `Customer ID: ${order.customer_id}`;
+            document.getElementById('focus-cust-address').textContent = order.delivery_address || 'Coordinates provided';
+            document.getElementById('focus-total').textContent = `Rs. ${Number(order.total_amount).toFixed(2)}`;
+            document.getElementById('focus-sla').textContent = `${order.scheduled_sla_minutes || 45} Minutes`;
+            
+            // Rider Status Block
+            const riderDetailsContainer = document.getElementById('focus-rider-details');
+            
+            if (order.agent_id && order.agent_id !== 'DRIVER-FALLBACK-99') {
+                const phone = order.rider_phone || '+91 99999 99999';
+                const vehicle = order.rider_vehicle || 'Motorbike';
+                const rating = order.rider_rating ? `${Number(order.rider_rating).toFixed(1)} ★` : '4.5 ★';
+                
+                // Select vehicle icon
+                let vehicleIcon = 'fa-motorcycle';
+                if (vehicle === 'Bicycle') vehicleIcon = 'fa-bicycle';
+                else if (vehicle === 'Scooter_Electric') vehicleIcon = 'fa-charging-station';
+                else if (vehicle === 'Mini_Van') vehicleIcon = 'fa-van-shuttle';
+                
+                let riderStatusText = 'Rider is driving to your kitchen to pick up the order...';
+                if (order.status === 'READY_FOR_PICKUP') {
+                    riderStatusText = 'Order is ready! Rider is arriving at the kitchen pick up counter.';
+                } else if (order.status === 'PICKED_UP') {
+                    riderStatusText = 'Rider has picked up the food and is driving to the customer address!';
+                } else if (order.status === 'DELIVERED') {
+                    riderStatusText = 'Delivery completed successfully!';
+                }
+
+                riderDetailsContainer.innerHTML = `
+                    <div class="rider-card">
+                        <div class="rider-avatar"><i class="fa-solid ${vehicleIcon}"></i></div>
+                        <div class="rider-info" style="flex-grow: 1;">
+                            <h5 style="font-weight:600; font-size:0.95rem;">${order.rider_name || 'Rider Assigned'}</h5>
+                            <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">ID: ${order.agent_id}</p>
+                            
+                            <!-- Detailed connected metadata for Restaurant Owner -->
+                            <div style="display: flex; gap: 12px; margin-top: 8px; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                                <span style="color: var(--accent);"><i class="fa-solid fa-star" style="margin-right: 4px; color: #fbbf24;"></i>${rating}</span>
+                                <span style="color: var(--text-muted);"><i class="fa-solid fa-phone" style="margin-right: 4px;"></i>${phone}</span>
+                                <span style="color: var(--text-muted);"><i class="fa-solid fa-truck" style="margin-right: 4px;"></i>${vehicle}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 10px;">
+                        <i class="fa-solid fa-circle-info" style="color: var(--primary); margin-right: 4px;"></i> ${riderStatusText}
+                    </p>
+                `;
+            } else {
+                riderDetailsContainer.innerHTML = `
+                    <div class="rider-card">
+                        <div class="rider-avatar"><i class="fa-solid fa-motorcycle"></i></div>
+                        <div class="rider-info">
+                            <h5>Rider Unassigned</h5>
+                            <p>DRIVER-PENDING</p>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 10px;">
+                        Waiting for dispatch scheduler to assign a delivery partner...
+                    </p>
+                `;
+            }
+        }
+
+        // Update Order Status API Call
+        async function updateOrderStatus(orderId, newStatus) {
+            try {
+                const response = await fetch(`/api/merchant/order/${orderId}/update-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update status');
+                
+                // Refresh local data
+                await fetchDashboardData();
+            } catch (err) {
+                alert(`Error updating order status: ${err.message}`);
+            }
+        }
+
+        // Trigger Dispatch Optimizer API Call
+        async function triggerDispatchOptimization() {
+            try {
+                const response = await fetch('/dispatch/optimize', { method: 'POST' });
+                if (!response.ok) throw new Error('Optimization request failed');
+                const result = await response.json();
+                
+                alert(result.message);
+                await fetchDashboardData();
+            } catch (err) {
+                alert(`Dispatch Optimizer Error: ${err.message}`);
+            }
+        }
+
+        // Menu Search Filtering
+        function filterMenu(input) {
+            const q = input.value.toLowerCase().trim();
+            document.querySelectorAll('#menu-container .menu-card').forEach(card => {
+                const name = card.getAttribute('data-name');
+                if (name.includes(q)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Add Menu Dish modal control
+        function openAddDishModal() {
+            document.getElementById('add-dish-modal').style.display = 'flex';
+        }
+        
+        function closeAddDishModal() {
+            document.getElementById('add-dish-modal').style.display = 'none';
+            document.getElementById('add-dish-form').reset();
+        }
+
+        // Submit Add Dish API Call
+        async function submitAddDish(e) {
+            e.preventDefault();
+            const dishName = document.getElementById('dish-name').value;
+            const price = parseFloat(document.getElementById('dish-price').value);
+            
+            try {
+                const response = await fetch(`/api/merchant/${merchantId}/menu/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ item_name: dishName, price: price })
+                });
+                
+                if (!response.ok) throw new Error('Failed to add dish');
+                
+                closeAddDishModal();
+                await fetchDashboardData();
+            } catch (err) {
+                alert(`Error adding menu item: ${err.message}`);
+            }
+        }
+
+        // Delete Menu Dish API Call
+        async function deleteMenuDish(itemId) {
+            if (!confirm('Are you sure you want to remove this dish from the catalog?')) return;
+            
+            try {
+                const response = await fetch(`/api/merchant/${merchantId}/menu/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ menu_item_id: itemId })
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete dish');
+                
+                await fetchDashboardData();
+            } catch (err) {
+                alert(`Error deleting dish: ${err.message}`);
+            }
+        }
+
+        // Cover Photo Modals Controls
+        function openCoverPhotoModal() {
+            const modal = document.getElementById('cover-photo-modal');
+            modal.style.display = 'flex';
+            document.getElementById('cover-photo-url').value = currentCoverBannerUrl || '';
+            
+            // Render presets grid
+            const grid = document.getElementById('presets-grid');
+            grid.innerHTML = '';
+            coverPresets.forEach(preset => {
+                grid.innerHTML += `
+                    <div style="cursor: pointer; border-radius: 6px; overflow: hidden; border: 2px solid transparent; height: 60px; background-image: url('${preset.url}'); background-size: cover; background-position: center;" onclick="selectCoverPreset('${preset.url}', this)" title="${preset.name}">
+                        <div style="background: rgba(0,0,0,0.4); width: 100%; height: 100%; display: flex; align-items: flex-end; padding: 4px; font-size: 0.65rem; font-weight: 600; color: #fff;">${preset.name}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        function closeCoverPhotoModal() {
+            document.getElementById('cover-photo-modal').style.display = 'none';
+        }
+        
+        function selectCoverPreset(url, el) {
+            document.getElementById('cover-photo-url').value = url;
+            document.querySelectorAll('#presets-grid > div').forEach(div => div.style.borderColor = 'transparent');
+            el.style.borderColor = 'var(--accent)';
+        }
+        
+        async function submitCoverPhoto(e) {
+            e.preventDefault();
+            const url = document.getElementById('cover-photo-url').value.trim();
+            
+            try {
+                const response = await fetch(`/api/merchant/${merchantId}/update-photo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_url: url })
+                });
+                
+                if (!response.ok) throw new Error('Failed to save cover photo');
+                
+                closeCoverPhotoModal();
+                await fetchDashboardData();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        // Dish Photo Modals Controls
+        function openDishPhotoModal(itemId) {
+            focusedDishItemId = itemId;
+            const modal = document.getElementById('dish-photo-modal');
+            modal.style.display = 'flex';
+            
+            // Retrieve current dish image if set in menuItems
+            const item = menuItems.find(i => i.menu_item_id === itemId);
+            const itemName = item ? item.item_name : "Dish Item";
+            document.getElementById('dish-modal-title').textContent = itemName;
+            document.getElementById('dish-photo-url').value = (item && item.image_url) || '';
+            
+            // Render presets
+            const grid = document.getElementById('dish-presets-grid');
+            grid.innerHTML = '';
+            dishPresets.forEach(preset => {
+                grid.innerHTML += `
+                    <div style="cursor: pointer; border-radius: 6px; overflow: hidden; border: 2px solid transparent; height: 60px; background-image: url('${preset.url}'); background-size: cover; background-position: center;" onclick="selectDishPreset('${preset.url}', this)" title="${preset.name}">
+                        <div style="background: rgba(0,0,0,0.4); width: 100%; height: 100%; display: flex; align-items: flex-end; padding: 4px; font-size: 0.65rem; font-weight: 600; color: #fff;">${preset.name}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        function closeDishPhotoModal() {
+            document.getElementById('dish-photo-modal').style.display = 'none';
+            focusedDishItemId = null;
+        }
+        
+        function selectDishPreset(url, el) {
+            document.getElementById('dish-photo-url').value = url;
+            document.querySelectorAll('#dish-presets-grid > div').forEach(div => div.style.borderColor = 'transparent');
+            el.style.borderColor = 'var(--primary)';
+        }
+        
+        async function submitDishPhoto(e) {
+            e.preventDefault();
+            const url = document.getElementById('dish-photo-url').value.trim();
+            
+            try {
+                const response = await fetch(`/api/merchant/${merchantId}/menu/${focusedDishItemId}/update-photo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_url: url })
+                });
+                
+                if (!response.ok) throw new Error('Failed to save dish photo');
+                
+                closeDishPhotoModal();
+                await fetchDashboardData();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        async function uploadPhoto(type) {
+            const fileInput = document.getElementById(type === 'cover' ? 'cover-file-input' : 'dish-file-input');
+            const urlInput = document.getElementById(type === 'cover' ? 'cover-photo-url' : 'dish-photo-url');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Please select a file to upload first.");
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+            
+            try {
+                const uploadBtn = fileInput.nextElementSibling;
+                const originalHtml = uploadBtn.innerHTML;
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = originalHtml;
+                
+                if (!response.ok) throw new Error("Upload failed");
+                const result = await response.json();
+                
+                if (result.status === "SUCCESS") {
+                    urlInput.value = result.url;
+                    alert("File uploaded successfully! Click save to apply changes.");
+                } else {
+                    throw new Error("Upload response status not SUCCESS");
+                }
+            } catch (err) {
+                alert(`File Upload Error: ${err.message}`);
+            }
+        }
+
+        // Analytics: Chart rendering with Chart.js
+        function updateCharts(cuisineSales) {
+            const ctx = document.getElementById('revenue-chart').getContext('2d');
+            
+            // Extract keys and values
+            const labels = Object.keys(cuisineSales || {}).map(k => k.toUpperCase());
+            const data = Object.values(cuisineSales || {}).map(v => Number(v));
+            
+            if (labels.length === 0) {
+                labels.push('NO SALES LOGGED');
+                data.push(0);
+            }
+            
+            if (analyticsChart) {
+                // Update chart dataset
+                analyticsChart.data.labels = labels;
+                analyticsChart.data.datasets[0].data = data;
+                analyticsChart.update();
+                return;
+            }
+
+            // Create new chart instance
+            analyticsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Earnings (Rs.)',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(226, 55, 68, 0.65)',   // Tomato Red
+                            'rgba(234, 88, 12, 0.65)',   // Burnt Orange
+                            'rgba(245, 158, 11, 0.65)',  // Amber Gold
+                            'rgba(22, 163, 74, 0.65)',   // Basil Green
+                            'rgba(159, 18, 57, 0.65)'    // Plum Rose
+                        ],
+                        borderColor: [
+                            '#E23744',
+                            '#EA580C',
+                            '#F59E0B',
+                            '#16A34A',
+                            '#9F1239'
+                        ],
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(45, 39, 33, 0.08)' },
+                            ticks: { color: '#7D756B', font: { family: 'Outfit', weight: '500' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#7D756B', font: { family: 'Outfit', weight: '500' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Dispatch Map: Initialize Leaflet Map
+        function initDispatchMap() {
+            if (mapInstance) return;
+            
+            // Map centered on kitchen
+            mapInstance = L.map('dispatch-map').setView([merchantLat, merchantLng], 14);
+            
+            // Tile Layer (Voyager CartoDB - warm roadmaps)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(mapInstance);
+            
+            updateMapPins();
+        }
+
+        // Update Map Markers and routes
+        function updateMapPins() {
+            if (!mapInstance) return;
+            
+            // Clear previous layers
+            mapMarkers.forEach(m => mapInstance.removeLayer(m));
+            mapPolylines.forEach(p => mapInstance.removeLayer(p));
+            mapMarkers = [];
+            mapPolylines = [];
+
+            // 1. Kitchen Marker (Burnt Orange/Terracotta Restaurant Icon)
+            const kitchenIcon = L.divIcon({
+                html: '<div style="background: #EA580C; border: 2px solid #fff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;"><i class="fa-solid fa-utensils"></i></div>',
+                className: 'custom-leaflet-icon',
+                iconSize: [22, 22]
+            });
+            
+            const kitchenMarker = L.marker([merchantLat, merchantLng], { icon: kitchenIcon })
+                .bindPopup(`<b>${merchantName}</b><br>Kitchen Center Hub`)
+                .addTo(mapInstance);
+            mapMarkers.push(kitchenMarker);
+
+            // Group active riders to display on map sidebar
+            const riderCardsContainer = document.getElementById('rider-status-container');
+            let riderSidebarHtml = '';
+            const trackedDrivers = new Set();
+
+            // 2. Active Order Pins & Routes
+            activeOrders.forEach(order => {
+                const hasCoordinates = order.cust_lat && order.cust_lng;
+                if (!hasCoordinates) return;
+                
+                // Customer Marker (Tomato Red Home Icon)
+                const customerIcon = L.divIcon({
+                    html: '<div style="background: #E23744; border: 2px solid #fff; width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 2px 8px rgba(226, 55, 68, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;"><i class="fa-solid fa-house"></i></div>',
+                    className: 'custom-leaflet-icon',
+                    iconSize: [20, 20]
+                });
+                
+                const custMarker = L.marker([order.cust_lat, order.cust_lng], { icon: customerIcon })
+                    .bindPopup(`<b>${order.order_id}</b><br>Status: ${order.status}<br>Total: Rs. ${order.total_amount}`)
+                    .addTo(mapInstance);
+                mapMarkers.push(custMarker);
+                
+                // Draw route line (Tomato Red dotted path)
+                const routeLine = L.polyline([[merchantLat, merchantLng], [order.cust_lat, order.cust_lng]], {
+                    color: '#E23744',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '4, 6'
+                }).addTo(mapInstance);
+                mapPolylines.push(routeLine);
+
+                // 3. Driver Marker if assigned
+                if (order.agent_id && order.agent_id !== 'DRIVER-FALLBACK-99') {
+                    // Check if driver has gps coordinates
+                    const dLat = order.rider_lat || (merchantLat + 0.003);
+                    const dLng = order.rider_lng || (merchantLng + 0.003);
+                    
+                    // Driver Marker (Basil Green Bike Icon)
+                    const riderIcon = L.divIcon({
+                        html: '<div style="background: #16A34A; border: 2px solid #fff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;"><i class="fa-solid fa-motorcycle"></i></div>',
+                        className: 'custom-leaflet-icon',
+                        iconSize: [22, 22]
+                    });
+                    
+                    const riderMarker = L.marker([dLat, dLng], { icon: riderIcon })
+                        .bindPopup(`<b>${order.rider_name || 'Driver'}</b><br>ID: ${order.agent_id}<br>Active Order: ${order.order_id}`)
+                        .addTo(mapInstance);
+                    mapMarkers.push(riderMarker);
+
+                    // Add line from rider to kitchen (or to customer - Basil Green path)
+                    const riderLine = L.polyline([[dLat, dLng], [merchantLat, merchantLng]], {
+                        color: '#16A34A',
+                        weight: 2.5,
+                        opacity: 0.6,
+                        dashArray: '3, 6'
+                    }).addTo(mapInstance);
+                    mapPolylines.push(riderLine);
+
+                    // Populate rider card in sidebar
+                    if (!trackedDrivers.has(order.agent_id)) {
+                        trackedDrivers.add(order.agent_id);
+                        riderSidebarHtml += `
+                            <li class="rider-status-card">
+                                <div class="rider-status-info">
+                                    <h5>${order.rider_name || 'Fleet Rider'}</h5>
+                                    <p>${order.agent_id}</p>
+                                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Delivering: ${order.order_id}</p>
+                                </div>
+                                <span class="rider-dot busy" title="Delivering Order"></span>
+                            </li>
+                        `;
+                    }
+                }
+            });
+
+            if (riderSidebarHtml === '') {
+                riderSidebarHtml = '<li style="text-align: center; color: var(--text-muted); padding: 20px;">No delivery riders currently dispatched.</li>';
+            }
+            
+            riderCardsContainer.innerHTML = riderSidebarHtml;
+        }
+
+        // Handle Logout
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = '/merchant';
+        }
+
+        // Start polling cycle (runs every 5 seconds)
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchDashboardData();
+            setInterval(fetchDashboardData, 5000);
+        });
+    </script>
+</body>
+</html>

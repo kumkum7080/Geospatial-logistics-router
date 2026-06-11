@@ -1,0 +1,612 @@
+<!-- C:\Users\kumku\.gemini\antigravity\scratch\geospatial_routing_system\static\admin\dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Console | BiteFlow Admin</title>
+    <!-- Custom CSS Styles -->
+    <link rel="stylesheet" href="/static/admin/style.css?v=5">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet Map API -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        
+        <!-- Top Navigation Bar -->
+        <div class="top-navbar">
+            <div class="navbar-brand">
+                <i class="fa-solid fa-mortar-pestle" style="font-size: 1.6rem; color: var(--primary);"></i>
+                <span class="logo-text">BiteFlow Admin</span>
+                <span class="badge-admin">Platform Owner</span>
+            </div>
+            
+            <div class="admin-info">
+                <span style="font-size: 0.9rem; font-weight: 500;"><i class="fa-solid fa-circle-check" style="color: var(--secondary); margin-right: 6px;"></i>System: Healthy</span>
+                <button class="btn-logout" onclick="handleLogout()"><i class="fa-solid fa-power-off"></i>Logout</button>
+            </div>
+        </div>
+
+        <!-- Main Body -->
+        <div class="dashboard-body">
+            
+            <!-- Left Sidebar Controls -->
+            <div class="sidebar">
+                <div class="sidebar-controls">
+                    
+                    <!-- Control 1: Surge pricing -->
+                    <div class="control-group">
+                        <h3 class="control-title">Surge Pricing Override</h3>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">
+                            <span>Active Surge:</span>
+                            <span id="surge-val-display" style="color: var(--primary);">1.0x</span>
+                        </div>
+                        <div class="range-slider-container">
+                            <input type="range" min="1.0" max="3.0" step="0.1" value="1.0" class="range-slider" id="surge-slider" oninput="updateSurgeSlider(this)">
+                        </div>
+                        <button class="btn-control-action" style="margin-top: 16px;" onclick="applySurgeMultiplier()">
+                            <i class="fa-solid fa-bolt"></i>
+                            Update Surge
+                        </button>
+                    </div>
+
+                    <!-- Control 2: Bulk Dispatch Matcher -->
+                    <div class="control-group">
+                        <h3 class="control-title">Dispatcher Actions</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">
+                            Run proximity matching algorithm on all fallback orders in queue to assign available fleet riders.
+                        </p>
+                        <button class="btn-control-action" onclick="triggerBulkOptimize()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            Optimize Dispatch
+                        </button>
+                    </div>
+
+                    <!-- Control 3: Map View Filter -->
+                    <div class="control-group" style="border-bottom: none;">
+                        <h3 class="control-title">Map Layer Filters</h3>
+                        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.88rem;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="layer-stores" checked onchange="filterMapLayers()" style="accent-color: var(--accent-blue);">
+                                Dark Stores (Blue Polygons)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="layer-kitchens" checked onchange="filterMapLayers()" style="accent-color: var(--primary);">
+                                Kitchen Partners (Orange)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="layer-riders" checked onchange="filterMapLayers()" style="accent-color: var(--accent-purple);">
+                                Online Fleet Riders (Green)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="layer-orders" checked onchange="filterMapLayers()" style="accent-color: var(--danger);">
+                                Active Deliveries (Red)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-footer">
+                    Hyperlocal Command Panel v1.0
+                </div>
+            </div>
+
+            <!-- Right Main Area -->
+            <div class="main-content">
+                
+                <!-- Metrics Bar -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel gold">
+                        <div class="stat-details">
+                            <h4>Platform Revenue</h4>
+                            <div class="stat-val" id="metric-rev">₹0.00</div>
+                        </div>
+                        <div class="stat-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                    </div>
+                    <div class="stat-card glass-panel green">
+                        <div class="stat-details">
+                            <h4>Active Deliveries</h4>
+                            <div class="stat-val" id="metric-active-orders">0</div>
+                        </div>
+                        <div class="stat-icon"><i class="fa-solid fa-truck-fast"></i></div>
+                    </div>
+                    <div class="stat-card glass-panel blue">
+                        <div class="stat-details">
+                            <h4>Online / Total Fleet</h4>
+                            <div class="stat-val" id="metric-fleet">0 / 0</div>
+                        </div>
+                        <div class="stat-icon"><i class="fa-solid fa-motorcycle"></i></div>
+                    </div>
+                    <div class="stat-card glass-panel purple">
+                        <div class="stat-details">
+                            <h4>Active Surge Pricing</h4>
+                            <div class="stat-val" id="metric-surge">1.0x</div>
+                        </div>
+                        <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
+                    </div>
+                </div>
+
+                <!-- Operations grid split (Map + Active Orders) -->
+                <div class="ops-grid">
+                    <!-- Leaflet Operations Map -->
+                    <div class="glass-panel" style="display: flex; flex-direction: column; overflow: hidden;">
+                        <div class="panel-header" style="border-bottom: 1px solid var(--border-color); background: rgba(2, 4, 8, 0.25);">
+                            <h2><i class="fa-solid fa-earth-asia"></i>Real-Time Operations Map (Bangalore Grid)</h2>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="color: var(--secondary); margin-right: 6px;"></i>Live tracking active</span>
+                        </div>
+                        <div class="map-container-wrapper">
+                            <div id="map"></div>
+                        </div>
+                    </div>
+
+                    <!-- Active Orders Queue Panel -->
+                    <div class="glass-panel" style="display: flex; flex-direction: column; overflow: hidden;">
+                        <div class="panel-header" style="border-bottom: 1px solid var(--border-color); background: rgba(2, 4, 8, 0.25);">
+                            <h2><i class="fa-solid fa-rectangle-list"></i>Active Deliveries Queue</h2>
+                            <span class="badge-admin" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;" id="active-orders-count-badge">0 Active</span>
+                        </div>
+                        <div class="order-strip-list" id="active-orders-list">
+                            <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+                                <i class="fa-solid fa-inbox" style="font-size: 2.5rem; opacity: 0.3; margin-bottom: 12px; display: block;"></i>
+                                No active dispatches on network
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lower grid tables: Fleet Directory + Kitchen Directory -->
+                <div class="details-tables-grid">
+                    
+                    <!-- Fleet Directory -->
+                    <div class="glass-panel">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-people-carry-box"></i>Logistics Fleet Registry</h2>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="admin-table">
+                               <thead>
+                                   <tr>
+                                       <th>Rider ID</th>
+                                       <th>Name</th>
+                                       <th>Vehicle</th>
+                                       <th>Rating</th>
+                                       <th>Load</th>
+                                       <th>Status</th>
+                                   </tr>
+                               </thead>
+                               <tbody id="fleet-table-body">
+                                   <tr>
+                                       <td colspan="6" style="text-align: center; color: var(--text-muted);">Querying fleet directory...</td>
+                                   </tr>
+                               </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Kitchen Registry -->
+                    <div class="glass-panel">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-kitchen-set"></i>Merchant Kitchen Directory</h2>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="admin-table">
+                               <thead>
+                                   <tr>
+                                       <th>ID</th>
+                                       <th>Kitchen Name</th>
+                                       <th>Cuisines</th>
+                                       <th>Rating</th>
+                                       <th>Status</th>
+                                       <th>Action</th>
+                                   </tr>
+                               </thead>
+                               <tbody id="merchant-table-body">
+                                   <tr>
+                                       <td colspan="6" style="text-align: center; color: var(--text-muted);">Querying merchant directory...</td>
+                                   </tr>
+                               </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Leaflet Map objects
+        let map = null;
+        let mapLayerStores = L.layerGroup();
+        let mapLayerKitchens = L.layerGroup();
+        let mapLayerRiders = L.layerGroup();
+        let mapLayerOrders = L.layerGroup();
+
+        // Cached Operations Data
+        let rawOperationsData = null;
+
+        // Custom Leaflet Icons (Foodie style round badges)
+        const dsIcon = L.divIcon({
+            html: '<div style="background: #0284C7; border: 2px solid #fff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;"><i class="fa-solid fa-warehouse"></i></div>',
+            className: 'custom-leaflet-icon',
+            iconSize: [22, 22]
+        });
+        const kitchenIcon = L.divIcon({
+            html: '<div style="background: #EA580C; border: 2px solid #fff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;"><i class="fa-solid fa-utensils"></i></div>',
+            className: 'custom-leaflet-icon',
+            iconSize: [22, 22]
+        });
+        const riderIcon = L.divIcon({
+            html: '<div style="background: #16A34A; border: 2px solid #fff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;"><i class="fa-solid fa-motorcycle"></i></div>',
+            className: 'custom-leaflet-icon',
+            iconSize: [22, 22]
+        });
+        const orderIcon = L.divIcon({
+            html: '<div style="background: #E23744; border: 2px solid #fff; width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 2px 8px rgba(226, 55, 68, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;"><i class="fa-solid fa-house"></i></div>',
+            className: 'custom-leaflet-icon',
+            iconSize: [20, 20]
+        });
+
+        // Auth Guard
+        window.addEventListener('DOMContentLoaded', () => {
+            const session = localStorage.getItem('admin_session');
+            if (session !== 'active') {
+                window.location.href = '/admin';
+                return;
+            }
+
+            // Init Leaflet map centered on Bangalore
+            initAdminMap();
+
+            // Run initial metrics and operations updates
+            updateDashboardMetrics();
+            updateOperationsCockpit();
+
+            // Polling loops
+            setInterval(updateDashboardMetrics, 4000);
+            setInterval(updateOperationsCockpit, 3000);
+        });
+
+        // Initialize Map
+        function initAdminMap() {
+            map = L.map('map', { zoomControl: false }).setView([12.9716, 77.5946], 12);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CartoDB'
+            }).addTo(map);
+
+            L.control.zoom({ position: 'topright' }).addTo(map);
+
+            // Add layer groups to map
+            mapLayerStores.addTo(map);
+            mapLayerKitchens.addTo(map);
+            mapLayerRiders.addTo(map);
+            mapLayerOrders.addTo(map);
+        }
+
+        // Fetch metrics
+        async function updateDashboardMetrics() {
+            try {
+                const response = await fetch('/api/admin/metrics');
+                if (!response.ok) throw new Error();
+
+                const result = await response.json();
+                const metrics = result.metrics;
+
+                document.getElementById('metric-rev').textContent = `₹${Number(metrics.total_revenue).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                document.getElementById('metric-active-orders').textContent = metrics.active_orders_count;
+                document.getElementById('metric-fleet').textContent = `${metrics.online_drivers_count} / ${metrics.total_drivers_count}`;
+                document.getElementById('metric-surge').textContent = `${Number(metrics.surge_multiplier).toFixed(1)}x`;
+
+                // Set slider value if it's not being dragged
+                if (document.activeElement !== document.getElementById('surge-slider')) {
+                    document.getElementById('surge-slider').value = metrics.surge_multiplier;
+                    document.getElementById('surge-val-display').textContent = `${Number(metrics.surge_multiplier).toFixed(1)}x`;
+                }
+
+            } catch (err) {
+                console.error("Failed to query dashboard metrics:", err);
+            }
+        }
+
+        // Fetch all asset operations data
+        async function updateOperationsCockpit() {
+            try {
+                const response = await fetch('/api/admin/operations-data');
+                if (!response.ok) throw new Error();
+
+                const result = await response.json();
+                rawOperationsData = result;
+
+                // Render Map pins
+                renderMapLayers();
+
+                // Render tables
+                renderRidersTable();
+                renderMerchantTable();
+                renderActiveOrdersStripList();
+
+            } catch (err) {
+                console.error("Failed to query central operations cockpit data:", err);
+            }
+        }
+
+        // Render Map Pins
+        function renderMapLayers() {
+            if (!rawOperationsData) return;
+
+            // Clear previous layer groups
+            mapLayerStores.clearLayers();
+            mapLayerKitchens.clearLayers();
+            mapLayerRiders.clearLayers();
+            mapLayerOrders.clearLayers();
+
+            // 1. Dark Stores and Boundaries
+            rawOperationsData.dark_stores.forEach(ds => {
+                L.marker([ds.lat, ds.lng], { icon: dsIcon }).addTo(mapLayerStores)
+                 .bindPopup(`<b>Dark Store Log Hub</b><br>ID: ${ds.hub_id}<br>Name: ${ds.name}<br>${ds.physical_address}`);
+
+                // Draw boundary polygon if present
+                if (ds.polygon_wkt) {
+                    try {
+                        const coords = parseWktPolygon(ds.polygon_wkt);
+                        L.polygon(coords, {
+                            color: '#0284C7',
+                            fillColor: '#0284C7',
+                            fillOpacity: 0.08,
+                            weight: 1.5
+                        }).addTo(mapLayerStores);
+                    } catch(e) { console.error("Error parsing polygon geometry WKT:", e); }
+                }
+            });
+
+            // 2. Kitchen Partners
+            rawOperationsData.restaurants.forEach(rest => {
+                if (rest.lat && rest.lng) {
+                    L.marker([rest.lat, rest.lng], { icon: kitchenIcon }).addTo(mapLayerKitchens)
+                     .bindPopup(`<b>Kitchen Partner:</b> ${rest.name}<br>Cuisines: ${rest.cuisine_types}<br>Rating: ${rest.rating_avg}★<br>Status: ${rest.is_active ? 'Active' : 'Suspended'}`);
+                }
+            });
+
+            // 3. Online Drivers
+            rawOperationsData.drivers.forEach(driver => {
+                if (driver.lat && driver.lng) {
+                    let statusLabel = driver.is_available ? 'Available' : 'Busy';
+                    if (driver.current_load_count > 0) statusLabel = 'On Delivery';
+                    
+                    L.marker([driver.lat, driver.lng], { icon: riderIcon }).addTo(mapLayerRiders)
+                     .bindPopup(`<b>Fleet Rider:</b> ${driver.full_name}<br>Vehicle: ${driver.vehicle_type}<br>Load: ${driver.current_load_count}<br>Status: ${statusLabel}`);
+                }
+            });
+
+            // 4. Active Orders
+            rawOperationsData.active_orders.forEach(order => {
+                if (order.cust_lat && order.cust_lng) {
+                    L.marker([order.cust_lat, order.cust_lng], { icon: orderIcon }).addTo(mapLayerOrders)
+                     .bindPopup(`<b>Active Dropoff Location</b><br>Order: ${order.sub_order_id}<br>Customer: ${order.customer_id}<br>Kitchen: ${order.rest_name || 'Seeded Partner'}<br>Status: ${order.order_status}`);
+                    
+                    // Draw delivery line (Restaurant -> Customer - Tomato Red path)
+                    if (order.rest_lat && order.rest_lng) {
+                        L.polyline([[order.rest_lat, order.rest_lng], [order.cust_lat, order.cust_lng]], {
+                            color: '#E23744',
+                            weight: 2.5,
+                            opacity: 0.6,
+                            dashArray: '4, 6'
+                        }).addTo(mapLayerOrders);
+                    }
+                }
+            });
+
+            // Reapply filters
+            filterMapLayers();
+        }
+
+        // Apply Layer Toggles
+        function filterMapLayers() {
+            if (!map) return;
+
+            const checkStores = document.getElementById('layer-stores').checked;
+            const checkKitchens = document.getElementById('layer-kitchens').checked;
+            const checkRiders = document.getElementById('layer-riders').checked;
+            const checkOrders = document.getElementById('layer-orders').checked;
+
+            if (checkStores) map.addLayer(mapLayerStores); else map.removeLayer(mapLayerStores);
+            if (checkKitchens) map.addLayer(mapLayerKitchens); else map.removeLayer(mapLayerKitchens);
+            if (checkRiders) map.addLayer(mapLayerRiders); else map.removeLayer(mapLayerRiders);
+            if (checkOrders) map.addLayer(mapLayerOrders); else map.removeLayer(mapLayerOrders);
+        }
+
+        // Render Tables
+        function renderRidersTable() {
+            const tbody = document.getElementById('fleet-table-body');
+            if (!rawOperationsData || rawOperationsData.drivers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No drivers online.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            rawOperationsData.drivers.forEach(driver => {
+                const tr = document.createElement('tr');
+                
+                let badgeClass = 'offline';
+                let statusLabel = 'Offline';
+                if (driver.is_available) {
+                    badgeClass = 'active';
+                    statusLabel = 'Online';
+                }
+                if (driver.current_load_count > 0) {
+                    badgeClass = 'busy';
+                    statusLabel = 'Busy';
+                }
+
+                tr.innerHTML = `
+                    <td style="font-weight: 600; font-family: monospace;">${driver.driver_id}</td>
+                    <td>${driver.full_name}</td>
+                    <td>${driver.vehicle_type}</td>
+                    <td>${driver.rating_avg.toFixed(2)}★</td>
+                    <td style="text-align: center; font-weight: 600;">${driver.current_load_count}</td>
+                    <td><span class="badge-status ${badgeClass}">${statusLabel}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderMerchantTable() {
+            const tbody = document.getElementById('merchant-table-body');
+            if (!rawOperationsData || rawOperationsData.restaurants.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No merchants registered.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            rawOperationsData.restaurants.forEach(rest => {
+                const tr = document.createElement('tr');
+                const badgeClass = rest.is_active ? 'active' : 'inactive';
+                const actionBtn = rest.is_active 
+                    ? `<button class="btn-table-toggle disable" onclick="toggleMerchantActive('${rest.merchant_id}', false)">Suspend</button>`
+                    : `<button class="btn-table-toggle enable" onclick="toggleMerchantActive('${rest.merchant_id}', true)">Activate</button>`;
+
+                tr.innerHTML = `
+                    <td style="font-family: monospace; font-size: 0.75rem;">${rest.merchant_id}</td>
+                    <td style="font-weight: 600;">${rest.name}</td>
+                    <td style="font-size: 0.78rem; color: var(--text-muted);">${rest.cuisine_types}</td>
+                    <td>${rest.rating_avg.toFixed(1)}★</td>
+                    <td><span class="badge-status ${badgeClass}">${rest.is_active ? 'Active' : 'Suspended'}</span></td>
+                    <td>${actionBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderActiveOrdersStripList() {
+            const list = document.getElementById('active-orders-list');
+            const badge = document.getElementById('active-orders-count-badge');
+            
+            if (!rawOperationsData || rawOperationsData.active_orders.length === 0) {
+                badge.textContent = "0 Active";
+                list.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+                        <i class="fa-solid fa-inbox" style="font-size: 2.5rem; opacity: 0.3; margin-bottom: 12px; display: block;"></i>
+                        No active dispatches on network
+                    </div>`;
+                return;
+            }
+
+            badge.textContent = `${rawOperationsData.active_orders.length} Active`;
+            list.innerHTML = '';
+
+            rawOperationsData.active_orders.forEach(order => {
+                const div = document.createElement('div');
+                div.className = 'order-strip';
+                
+                let stepLabel = 'Placed';
+                if (order.order_status === 'PREPARING') stepLabel = 'Preparing';
+                if (order.order_status === 'READY_FOR_PICKUP') stepLabel = 'Ready';
+                if (order.order_status === 'PICKED_UP') stepLabel = 'Out for Delivery';
+
+                div.innerHTML = `
+                    <div>
+                        <div class="order-strip-id">${order.sub_order_id}</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+                            Rider: <span style="color: var(--text-main); font-weight: 500;">${order.agent_id}</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="order-strip-val">₹${order.total_amount.toFixed(2)}</div>
+                        <div style="font-size: 0.75rem; color: var(--accent-blue); font-weight: 500; margin-top: 4px;">${stepLabel}</div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // Slider Updates
+        function updateSurgeSlider(slider) {
+            document.getElementById('surge-val-display').textContent = `${Number(slider.value).toFixed(1)}x`;
+        }
+
+        // Apply Surge Pricing
+        async function applySurgeMultiplier() {
+            const slider = document.getElementById('surge-slider');
+            const val = parseFloat(slider.value);
+            
+            try {
+                const response = await fetch('/api/admin/surge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ surge_multiplier: val })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    alert(`Surge updated successfully to: ${val}x`);
+                    updateDashboardMetrics();
+                } else {
+                    alert(result.detail || 'Surge update failed');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection failure updating surge multiplier.');
+            }
+        }
+
+        // Trigger Queue optimization
+        async function triggerBulkOptimize() {
+            try {
+                const response = await fetch('/api/admin/dispatch-optimize', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(`Bulk matching completed successfully!\nResult: ${result.message}`);
+                    updateOperationsCockpit();
+                } else {
+                    alert('Optimization trigger failed.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection failure running dispatch optimizer.');
+            }
+        }
+
+        // Toggle Merchant listing active status
+        async function toggleMerchantActive(merchantId, active) {
+            try {
+                const response = await fetch(`/api/admin/restaurant/${merchantId}/toggle-active`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_active: active })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    updateOperationsCockpit();
+                } else {
+                    alert(result.detail || 'Merchant toggle failed');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection failure toggling merchant compliance.');
+            }
+        }
+
+        // WKT Parser Helper (Converts WKT POLYGON to Leaflet LatLng coordinates array)
+        function parseWktPolygon(wkt) {
+            // e.g. "POLYGON ((12.97 77.59, 12.98 77.59, 12.98 77.60, 12.97 77.59))"
+            const cleaned = wkt.replace(/POLYGON\s*\(\(/i, '').replace(/\)\)/, '');
+            const pts = cleaned.split(',');
+            return pts.map(pt => {
+                const parts = pt.trim().split(/\s+/);
+                return [parseFloat(parts[0]), parseFloat(parts[1])];
+            });
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('admin_session');
+            window.location.href = '/admin';
+        }
+    </script>
+</body>
+</html>

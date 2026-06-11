@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Register - BangaloreBites</title>
+  <link rel="stylesheet" href="/static/consumer/style.css?v=15">
+</head>
+<body class="auth-page">
+
+  <!-- Dual-buffered looping slow-motion food background videos -->
+  <video id="bg-video-1" autoplay muted playsinline class="auth-video-bg active" referrerpolicy="no-referrer"></video>
+  <video id="bg-video-2" autoplay muted playsinline class="auth-video-bg" referrerpolicy="no-referrer"></video>
+
+  <div class="auth-card glass">
+    <div class="auth-header">
+      <a href="/bangalore" class="logo" style="justify-content: center; margin-bottom: 24px;">
+        <span>Bangalore</span>Bites
+      </a>
+      <h2 class="auth-title">Create Account</h2>
+      <p class="auth-subtitle">Register to begin placing hyperlocal orders</p>
+    </div>
+
+    <div id="error-box" class="auth-error"></div>
+
+    <form id="register-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+      <div class="form-group">
+        <label for="name" class="form-label">Full Name</label>
+        <input type="text" id="name" class="form-input" placeholder="e.g. John Doe" required>
+      </div>
+
+      <div class="form-group">
+        <label for="dob" class="form-label">Date of Birth</label>
+        <input type="date" id="dob" class="form-input" required>
+      </div>
+
+      <div class="form-group">
+        <label for="user_id" class="form-label">User ID</label>
+        <input type="text" id="user_id" class="form-input" placeholder="Choose a unique user ID" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="Create a strong password" required minlength="6">
+      </div>
+
+      <div class="form-group">
+        <label for="phone" class="form-label">Phone Number</label>
+        <input type="tel" id="phone" class="form-input" placeholder="e.g. +91 9876543210" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email ID</label>
+        <input type="email" id="email" class="form-input" placeholder="e.g. john@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="address" class="form-label">Address</label>
+        <input type="text" id="address" class="form-input" placeholder="Enter your delivery address" required>
+      </div>
+
+      <div class="form-group">
+        <label for="tier" class="form-label">Membership Tier</label>
+        <select id="tier" class="form-input" style="background-color: var(--bg-secondary); cursor: pointer;">
+          <option value="Standard">Standard (Regular)</option>
+          <option value="Business">Business (Corporate)</option>
+          <option value="Premium_VIP">Premium VIP</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px; grid-column: 1 / -1;">
+        Register Now
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-secondary);">
+      Already have an account? <a href="/login" class="btn-text" style="padding: 0; font-weight: 600;">Sign in</a>
+    </div>
+  </div>
+
+  <script>
+    const session = localStorage.getItem('customer_session');
+    if (session) {
+      window.location.href = '/bangalore';
+    }
+
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nameVal = document.getElementById('name').value.trim();
+      const dobVal = document.getElementById('dob').value;
+      const userIdVal = document.getElementById('user_id').value.trim();
+      const passwordVal = document.getElementById('password').value;
+      const phoneVal = document.getElementById('phone').value.trim();
+      const emailVal = document.getElementById('email').value.trim();
+      const addressVal = document.getElementById('address').value.trim();
+      const tierVal = document.getElementById('tier').value;
+      const errorBox = document.getElementById('error-box');
+      errorBox.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            full_name: nameVal,
+            date_of_birth: dobVal,
+            user_id: userIdVal,
+            password: passwordVal,
+            phone_number: phoneVal,
+            email: emailVal,
+            address: addressVal,
+            tier: tierVal
+          })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'SUCCESS') {
+          // Set customer details in session
+          localStorage.setItem('customer_session', JSON.stringify({
+            customer_id: data.customer_id,
+            full_name: data.full_name,
+            phone_number: data.phone_number,
+            tier: data.tier
+          }));
+          window.location.href = '/bangalore';
+        } else {
+          errorBox.textContent = data.detail || 'Registration failed. Please check your details.';
+          errorBox.style.display = 'block';
+        }
+      } catch (err) {
+        console.error(err);
+        errorBox.textContent = 'Server connection failed. Is the API online?';
+        errorBox.style.display = 'block';
+      }
+    });
+
+    // Seamless double-buffered crossfade video slideshow
+    const videoUrls = [
+      "/static/consumer/video1.mp4?t=" + Date.now(), // Steaming rice bowl rotating
+      "/static/consumer/video2.mp4?t=" + Date.now(), // Coffee pouring
+      "/static/consumer/video3.mp4?t=" + Date.now(), // Pastries scoop
+      "/static/consumer/video4.mp4?t=" + Date.now(), // Steak sizzling
+      "/static/consumer/video5.mp4?t=" + Date.now(), // Rice bowl rotating (alt)
+      "/static/consumer/video6.mp4?t=" + Date.now()  // Coffee lift alternate
+    ];
+    
+    let currentVideoIndex = 0;
+    const v1 = document.getElementById('bg-video-1');
+    const v2 = document.getElementById('bg-video-2');
+    
+    // Initialize first video
+    v1.src = videoUrls[0];
+    v1.load();
+    v1.play().catch(e => console.warn(e));
+
+    function transitionVideos() {
+      currentVideoIndex = (currentVideoIndex + 1) % videoUrls.length;
+      const nextUrl = videoUrls[currentVideoIndex];
+      
+      const activeVideo = v1.classList.contains('active') ? v1 : v2;
+      const nextVideo = activeVideo === v1 ? v2 : v1;
+      
+      // Load next video in background
+      nextVideo.src = nextUrl;
+      nextVideo.load();
+      
+      nextVideo.oncanplaythrough = () => {
+        nextVideo.play().then(() => {
+          activeVideo.classList.remove('active');
+          nextVideo.classList.add('active');
+        }).catch(e => console.warn(e));
+        
+        nextVideo.oncanplaythrough = null;
+      };
+    }
+    
+    // Rotate every 8 seconds
+    setInterval(transitionVideos, 8000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!-- C:\Users\kumku\.gemini\antigravity\scratch\geospatial_routing_system\static\merchant\login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Login | BiteFlow Kitchens</title>
+    <!-- Custom CSS Styles -->
+    <link rel="stylesheet" href="/static/merchant/style.css?v=5">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card glass-panel">
+            <div class="brand-header">
+                <span class="brand-logo">BiteFlow Kitchens</span>
+                <p class="brand-subtitle">Hyperlocal Kitchen Dashboard & Fleet Dispatch Partner Portal</p>
+            </div>
+            
+            <!-- Tab Navigation -->
+            <div class="tab-header" style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 24px;">
+                <button type="button" class="login-tab-btn active" onclick="switchLoginTab('credentials')" style="flex: 1; padding: 12px; background: transparent; border: none; border-bottom: 2px solid var(--primary); color: var(--text-main); font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                    Owner Sign In
+                </button>
+                <button type="button" class="login-tab-btn" onclick="switchLoginTab('demo')" style="flex: 1; padding: 12px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-family: inherit; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
+                    Demo Access
+                </button>
+            </div>
+
+            <!-- Error/Success Alert Box -->
+            <div id="alert-box" class="form-group glass-panel" style="display: none; padding: 12px; margin-bottom: 20px; text-align: center;">
+                <p id="alert-message" style="font-size: 0.9rem; font-weight: 500;"></p>
+            </div>
+            
+            <form id="login-form" onsubmit="handleLogin(event)">
+                
+                <!-- Tab 1 Fields: Credentials Login -->
+                <div id="credentials-form-fields">
+                    <div class="form-group">
+                        <label class="form-label" for="owner-username">Username (User ID)</label>
+                        <input type="text" id="owner-username" class="form-input" placeholder="e.g. rahul_kitchens" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="owner-password">Password</label>
+                        <input type="password" id="owner-password" class="form-input" placeholder="••••••••" required />
+                    </div>
+                </div>
+
+                <!-- Tab 2 Fields: Demo Selector Access -->
+                <div id="demo-form-fields" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="restaurant-select">Select Restaurant Kitchen</label>
+                        <select id="restaurant-select" class="form-select" onchange="onRestaurantSelect(this)">
+                            <option value="" disabled selected>Retrieving active kitchens...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Expanded Info Box (Visible on select) -->
+                    <div id="info-box" class="form-group glass-panel" style="display: none; padding: 16px; margin-top: 10px; border-color: var(--border-color); background: #FCFBFA;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin-bottom: 8px;" id="info-name">Restaurant Name</h4>
+                        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px;"><i class="fa-solid fa-utensils" style="margin-right: 6px;"></i><span id="info-cuisines">North Indian</span></p>
+                        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px;"><i class="fa-solid fa-star" style="margin-right: 6px; color: #fbbf24;"></i>Rating: <span id="info-rating" style="color: var(--text-main); font-weight: 500;">4.2</span></p>
+                        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px;"><i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i>Coords: <span id="info-coords" style="color: var(--text-main); font-weight: 500;">12.97, 77.59</span></p>
+                        <p style="font-size: 0.82rem; color: var(--text-muted);"><i class="fa-solid fa-phone" style="margin-right: 6px;"></i>Contact: <span id="info-phone" style="color: var(--text-main); font-weight: 500;">+91 99999 99999</span></p>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 24px;">
+                    <button type="submit" class="btn-primary" id="btn-login-submit">
+                        <span>Launch Control Panel</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div style="margin-top: 20px; font-size: 0.9rem; text-align: center; color: var(--text-muted);">
+                    New partner? 
+                    <a href="/merchant/register" style="color: var(--primary); text-decoration: none; font-weight: 500;">Register your kitchen here</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let restaurantsList = [];
+        let currentMode = 'credentials';
+
+        // Switch login tab
+        function switchLoginTab(mode) {
+            currentMode = mode;
+            const tabBtns = document.querySelectorAll('.login-tab-btn');
+            const credentialsForm = document.getElementById('credentials-form-fields');
+            const demoForm = document.getElementById('demo-form-fields');
+            const ownerUsername = document.getElementById('owner-username');
+            const ownerPassword = document.getElementById('owner-password');
+            const selectElement = document.getElementById('restaurant-select');
+            const btnSubmit = document.getElementById('btn-login-submit');
+
+            if (mode === 'credentials') {
+                tabBtns[0].classList.add('active');
+                tabBtns[0].style.borderBottomColor = 'var(--primary)';
+                tabBtns[0].style.color = 'var(--text-main)';
+                tabBtns[1].classList.remove('active');
+                tabBtns[1].style.borderBottomColor = 'transparent';
+                tabBtns[1].style.color = 'var(--text-muted)';
+                
+                credentialsForm.style.display = 'block';
+                demoForm.style.display = 'none';
+                
+                ownerUsername.required = true;
+                ownerPassword.required = true;
+                selectElement.required = false;
+
+                btnSubmit.disabled = false;
+                btnSubmit.style.opacity = '1';
+                btnSubmit.style.cursor = 'pointer';
+            } else {
+                tabBtns[1].classList.add('active');
+                tabBtns[1].style.borderBottomColor = 'var(--primary)';
+                tabBtns[1].style.color = 'var(--text-main)';
+                tabBtns[0].classList.remove('active');
+                tabBtns[0].style.borderBottomColor = 'transparent';
+                tabBtns[0].style.color = 'var(--text-muted)';
+                
+                credentialsForm.style.display = 'none';
+                demoForm.style.display = 'block';
+                
+                ownerUsername.required = false;
+                ownerPassword.required = false;
+                selectElement.required = true;
+
+                // Validate selector
+                onRestaurantSelect(selectElement);
+            }
+        }
+
+        // Fetch active seeded restaurants on mount for Demo Tab
+        async function fetchRestaurants() {
+            try {
+                const response = await fetch('/api/merchant/restaurants');
+                if (!response.ok) throw new Error('API server returned error');
+                
+                restaurantsList = await response.json();
+                const selectElement = document.getElementById('restaurant-select');
+                
+                selectElement.innerHTML = '<option value="" disabled selected>Select your kitchen...</option>';
+                
+                if (restaurantsList.length === 0) {
+                    selectElement.innerHTML = '<option value="" disabled>No active restaurants found.</option>';
+                    return;
+                }
+                
+                restaurantsList.forEach(rest => {
+                    const opt = document.createElement('option');
+                    opt.value = rest.merchant_id;
+                    opt.textContent = `${rest.name} (${rest.merchant_id})`;
+                    selectElement.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Failed to load restaurants:', err);
+                const selectElement = document.getElementById('restaurant-select');
+                selectElement.innerHTML = '<option value="" disabled>Connection failed. Retrying...</option>';
+                setTimeout(fetchRestaurants, 3000);
+            }
+        }
+
+        // Handle restaurant selection change in Demo tab
+        function onRestaurantSelect(select) {
+            const val = select.value;
+            const rest = restaurantsList.find(r => r.merchant_id === val);
+            const btn = document.getElementById('btn-login-submit');
+            
+            if (rest) {
+                document.getElementById('info-name').textContent = rest.name;
+                document.getElementById('info-cuisines').textContent = rest.cuisine_types || 'North Indian';
+                document.getElementById('info-rating').textContent = Number(rest.rating_avg).toFixed(1);
+                document.getElementById('info-coords').textContent = `${Number(rest.lat).toFixed(4)}, ${Number(rest.lng).toFixed(4)}`;
+                document.getElementById('info-phone').textContent = rest.contact_details || '+91 99999 99999';
+                
+                document.getElementById('info-box').style.display = 'block';
+                
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            } else {
+                document.getElementById('info-box').style.display = 'none';
+                if (currentMode === 'demo') {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.6';
+                    btn.style.cursor = 'not-allowed';
+                }
+            }
+        }
+
+        // Save selected restaurant info to localStorage and redirect to dashboard
+        async function handleLogin(e) {
+            e.preventDefault();
+            const alertBox = document.getElementById('alert-box');
+            const alertMsg = document.getElementById('alert-message');
+
+            if (currentMode === 'credentials') {
+                const username = document.getElementById('owner-username').value;
+                const password = document.getElementById('owner-password').value;
+                const btn = document.getElementById('btn-login-submit');
+                
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.querySelector('span').textContent = 'Authenticating...';
+                
+                try {
+                    const response = await fetch('/api/merchant/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: username, password: password })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.detail || 'Login failed');
+                    }
+
+                    // Save session details
+                    localStorage.setItem('merchant_id', result.merchant_id || '');
+                    if (result.restaurant) {
+                        localStorage.setItem('merchant_name', result.restaurant.name);
+                        localStorage.setItem('merchant_lat', result.restaurant.lat);
+                        localStorage.setItem('merchant_lng', result.restaurant.lng);
+                        localStorage.setItem('merchant_cuisines', result.restaurant.cuisine_types);
+                        localStorage.setItem('merchant_rating', result.restaurant.rating_avg);
+                        localStorage.setItem('merchant_phone', result.restaurant.contact_details);
+                    }
+                    localStorage.setItem('merchant_user_id', result.user_id);
+                    localStorage.setItem('merchant_user_fullname', result.full_name);
+                    
+                    alertBox.style.display = 'block';
+                    alertBox.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                    alertBox.style.background = 'rgba(16, 185, 129, 0.1)';
+                    alertMsg.style.color = 'var(--accent)';
+                    alertMsg.textContent = 'Login successful! Launching Control Panel...';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/merchant/dashboard';
+                    }, 1000);
+
+                } catch (err) {
+                    console.error('Login Error:', err);
+                    alertBox.style.display = 'block';
+                    alertBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    alertBox.style.background = 'rgba(239, 68, 68, 0.1)';
+                    alertMsg.style.color = 'var(--danger)';
+                    alertMsg.textContent = err.message || 'Incorrect credentials.';
+                    
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.querySelector('span').textContent = 'Launch Control Panel';
+                }
+            } else {
+                // Demo Select Mode
+                const select = document.getElementById('restaurant-select');
+                const merchantId = select.value;
+                const rest = restaurantsList.find(r => r.merchant_id === merchantId);
+                
+                if (rest) {
+                    localStorage.setItem('merchant_id', rest.merchant_id);
+                    localStorage.setItem('merchant_name', rest.name);
+                    localStorage.setItem('merchant_lat', rest.lat);
+                    localStorage.setItem('merchant_lng', rest.lng);
+                    localStorage.setItem('merchant_cuisines', rest.cuisine_types);
+                    localStorage.setItem('merchant_rating', rest.rating_avg);
+                    localStorage.setItem('merchant_phone', rest.contact_details);
+                    
+                    localStorage.setItem('merchant_user_id', 'demo_admin');
+                    localStorage.setItem('merchant_user_fullname', 'Demo Admin');
+                    
+                    window.location.href = '/merchant/dashboard';
+                }
+            }
+        }
+
+        // Run fetch on load
+        window.addEventListener('DOMContentLoaded', fetchRestaurants);
+    </script>
+</body>
+</html>
