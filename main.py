@@ -1768,6 +1768,46 @@ def update_driver_availability(driver_id: str, payload: DriverAvailabilityPayloa
 
 # --- 👑 NETWORK OWNER (ADMIN) CONTROL SCHEMAS & ENDPOINTS ---
 
+@app.get("/api/admin/db-setup")
+def run_db_setup():
+    import setup_db
+    import data_seeder
+    import seed_fleet
+    
+    try:
+        # Build schema
+        setup_db.build_advanced_schema()
+        
+        # Rebuild DB Connection Pool dynamically
+        global db_pool
+        try:
+            db_pool = pooling.MySQLConnectionPool(
+                pool_name="hyperlocal_routing_pool",
+                pool_size=10,
+                pool_reset_session=True,
+                **db_config
+            )
+            print("⚡ [Initialization] Database Connection Pool re-established successfully.")
+        except Exception as pool_err:
+            print(f"❌ Failed to re-establish DB Pool: {pool_err}")
+            
+        # Seed core assets
+        data_seeder.seed_database()
+        
+        # Seed driver fleet
+        seed_fleet.seed_system_fleet()
+        
+        return {
+            "status": "SUCCESS",
+            "message": "Database schema created, connection pool re-established, and base data seeded successfully."
+        }
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "message": f"Database initialization failed: {str(e)}"
+        }
+
+
 class AdminSurgePayload(BaseModel):
     surge_multiplier: float
 
