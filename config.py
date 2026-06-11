@@ -19,10 +19,14 @@ def _load_env_file(path: Path = ENV_PATH) -> dict[str, str]:
     return values
 
 
+import os
+
 _ENV = _load_env_file()
 
 
 def env(name: str, default: str) -> str:
+    if name in os.environ:
+        return os.environ[name]
     return _ENV.get(name, default)
 
 

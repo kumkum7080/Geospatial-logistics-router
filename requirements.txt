@@ -1,6 +1,7 @@
 fastapi>=0.100.0
 uvicorn>=0.22.0
 pymysql>=1.0.0
+mysql-connector-python>=8.0.33
 redis>=4.5.0
 requests>=2.30.0
 cryptography>=41.0.0
